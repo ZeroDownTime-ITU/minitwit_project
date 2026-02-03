@@ -17,11 +17,11 @@ from datetime import datetime
 from contextlib import closing
 from flask import Flask, request, session, url_for, redirect, \
      render_template, abort, g, flash
-from werkzeug import check_password_hash, generate_password_hash
+from werkzeug.security import check_password_hash, generate_password_hash
 
 
 # configuration
-DATABASE = '/tmp/minitwit.db'
+DATABASE = 'minitwit.db'
 PER_PAGE = 30
 DEBUG = True
 SECRET_KEY = 'development key'
@@ -38,7 +38,7 @@ def connect_db():
 def init_db():
     """Creates the database tables."""
     with closing(connect_db()) as db:
-        with app.open_resource('schema.sql') as f:
+        with app.open_resource('schema.sql', mode='r') as f:
             db.cursor().executescript(f.read())
         db.commit()
 

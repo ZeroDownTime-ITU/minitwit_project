@@ -17,8 +17,6 @@ from contextlib import closing
 from flask import Flask, request, session, url_for, redirect, \
      render_template, abort, g, flash
 from werkzeug.security import check_password_hash, generate_password_hash
-from werkzeug.security import check_password_hash, generate_password_hash
-
 
 # configuration
 DATABASE = 'minitwit.db'

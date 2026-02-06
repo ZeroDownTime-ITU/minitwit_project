@@ -1,0 +1,14 @@
+#1 Refactoring
+
+-  Installed python3 with dependencies:
+    Flask >= version 3.0.0
+    Werkzeug >= version 3.0.0
+    Jinja2 >= version 3.0.0
+
+- Installed sqllite3
+
+- Ran 2to3 on minitwit.py and tests and used it to refactor code to fit python3
+
+- Used shellcheck to refactor control.sh (added shebang)
+
+- Changed ..from werkzeug import.. to ..from werkzeug.security import..

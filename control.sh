@@ -13,6 +13,17 @@ elif [ "$1" = "startprod" ]; then
 elif [ "$1" = "start" ]; then
     echo "Starting minitwit..."
     nohup python3 minitwit.py > /tmp/out.log 2>&1 &
+
+    URL="http://localhost:5000"
+
+    if command -v xdg-open > /dev/null; then
+    xdg-open "$URL"    # Linux
+    elif command -v open > /dev/null; then
+    open "$URL"        # macOS
+    else
+    explorer.exe "$URL" # Windows
+    fi
+    
 elif [ "$1" = "stop" ]; then
     echo "Stopping minitwit..."
     pkill -f minitwit
@@ -23,3 +34,4 @@ elif [ "$1" = "flag" ]; then
 else
   echo "I do not know this command..."
 fi
+

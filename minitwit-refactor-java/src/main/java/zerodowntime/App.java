@@ -97,7 +97,7 @@ public class App {
         var app = Javalin.create(config -> {
             config.staticFiles.add("/static");
             config.fileRenderer(new JavalinPebble());
-        });
+        }).start(7070); // Port 7070
         
         // Make sure we are connected to the database each request and look
         // -up the current user so that we know he's there
@@ -122,16 +122,13 @@ public class App {
             }
         });
         
-        // Routes/endpoints below
-        app.get("/", context -> {
-            Map<String, Object> user = context.attribute("user");
-            if (user != null) {
-                context.result("Hello " + user.get("username"));
-            } else {
-                context.result("Hello World");
-            }
-        });
+        // ---------------- Routes/endpoints below ----------------
         
+        // Redirect to timeline if empty route
+        app.get("/", context -> {
+            context.redirect("/timeline");
+        });
+
         // Shows a users timeline or if no user is logged in it will
         // redirect to the public timeline.  This timeline shows the user's
         // messages as well as all the messages of followed users.
@@ -229,8 +226,5 @@ public class App {
 
             context.render("register.html", Map.of("error", error));
         });
-        
-        // Port 7070
-        app.start(7070);
     }
 }

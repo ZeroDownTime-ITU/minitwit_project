@@ -17,7 +17,7 @@ RUN mvn -DskipTests package
 
 # RUNTIME OF CONTAINER
 
-FROM eclipse-temurin:17-jre
+FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # We use the reference to the build stage above and copy from the dir the compiled code  

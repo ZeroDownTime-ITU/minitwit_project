@@ -1,5 +1,5 @@
 #!/bin/bash
-
+# WARNING : THIS IS NOT FOR USE OF YET. IT IS A WIP FOR USE AT ANOTHER POINT
 APP_JAR="/app/app.jar"
 DB_FILE="minitwit.db"
 

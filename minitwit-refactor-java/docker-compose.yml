@@ -1,0 +1,13 @@
+services:
+  app:
+    image: maven:3.8-eclipse-temurin-21-alpine
+    working_dir: /app
+    volumes:
+      - /home/magnb/Desktop/minitwit_project/minitwit-refactor-java:/app
+      - m2:/root/.m2
+    ports:
+      - "7070:7070"
+    command: [ "./control-java.sh", "start"]
+
+volumes:
+  m2: 

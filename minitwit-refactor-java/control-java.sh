@@ -21,8 +21,11 @@ elif [ "$1" = "start" ]; then
         echo "JAR not found. Building..."
         mvn clean package
     fi
-    nohup java -jar "$JAR_FILE" > out.log 2>&1 &
-    echo "Started with PID $!"
+    exec java -jar "$JAR_FILE"
+
+    # EDITED THIS OUT TO RUN THE SEVER WITH DOCKER
+    #nohup java -jar "$JAR_FILE" > out.log 2>&1 &
+    #echo "Started with PID $!"
 
 elif [ "$1" = "stop" ]; then
     echo "Stopping minitwit..."

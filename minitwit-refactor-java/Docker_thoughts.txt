@@ -1,0 +1,13 @@
+Docker file = the recipe to build the images
+
+Image = The artifact from the docker file (immutable)
+
+Container = A running instance of an image
+
+Docker compose = A way of running multiple containers in the same env (by handling the order of execution)
+
+
+Why have seperate images and containers for 'dbserver' and 'webserver'?
+    - It is mainly about how long it takes for each container to be built. It is therefore beneficial for us to have a seperate websever which is composed of the dbserver
+      thus making the combination into a whole working server
+

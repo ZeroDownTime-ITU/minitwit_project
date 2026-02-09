@@ -17,10 +17,17 @@ elif [ "$1" = "build" ]; then
 
 elif [ "$1" = "start" ]; then
     echo "Starting minitwit-java..."
-    if [ ! -f "$JAR_FILE" ]; then
-        echo "JAR not found. Building..."
-        mvn clean package
+    if [ ! -f "$DB_FILE" ]; then
+        echo "DB not found. Initialising DB..."
+        mvn -x compile exec:java -Dexec.mainClass="zerodowntime.app" -Dexec.args="init"
+
+    else 
+        echo "DB exists."
     fi
+    #if [ ! -f "$JAR_FILE" ]; then
+    #    echo "JAR not found. Building..."
+    #    mvn clean package
+    #fi
     exec java -jar "$JAR_FILE"
 
     # EDITED THIS OUT TO RUN THE SEVER WITH DOCKER

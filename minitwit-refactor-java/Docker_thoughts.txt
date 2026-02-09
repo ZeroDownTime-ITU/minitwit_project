@@ -11,3 +11,10 @@ Why have seperate images and containers for 'dbserver' and 'webserver'?
     - It is mainly about how long it takes for each container to be built. It is therefore beneficial for us to have a seperate websever which is composed of the dbserver
       thus making the combination into a whole working server
 
+For now it might be smarter that we include the maven dependency in the docker file since we are still developing
+But later on it might be better to not include it (for better build times, even though it does not take long to build)
+
+
+NOTES ON DOCKER-COMPOSE.YML
+
+  We get images from the could here (the maven version we are using) as well as we are running this 

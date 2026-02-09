@@ -23,7 +23,7 @@ WORKDIR /app
 # We use the reference to the build stage above and copy from the dir the compiled code  
 COPY --from=build /app/target/*.jar /app/app.jar
 COPY control-java.sh /app/control-java.sh
-# The flag -x here just makes it so we can execute the .sh file (I think it works like chmod 775 <insert name of sh-file>)
+# The flag +x here just makes it so we can execute the .sh file (I think it works like chmod 775 <insert name of sh-file>)
 RUN chmod +x /app/control-java.sh
 
 EXPOSE 7070

@@ -226,5 +226,14 @@ public class App {
 
             context.render("register.html", Map.of("error", error));
         });
+
+        app.get("/logout", context ->{
+            context.sessionAttribute("flash", "You were logged out");
+            context.sessionAttribute("user_id", null);
+            context.redirect("/public");
+
+            String flash = context.sessionAttribute("flash");
+            context.sessionAttribute(flash, null);
+        });
     }
 }

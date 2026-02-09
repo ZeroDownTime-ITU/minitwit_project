@@ -1,5 +1,5 @@
 # Has to start with the latest build
-FROM maven:3.9-eclipse-temurin-17 AS build
+FROM maven:4.0.0-rc-5-eclipse-temurin-21 AS build
 
 # the "WORKDIR" will make a directory on the container (if it doesnt have the dir)
 WORKDIR /app

@@ -7,7 +7,7 @@ services:
       - m2:/root/.m2
     ports:
       - "7070:7070"
-    command: [ "./control-java.sh", "start"]
+    command: [ "./control-java.sh", "start" ]
 
 volumes:
   m2: 

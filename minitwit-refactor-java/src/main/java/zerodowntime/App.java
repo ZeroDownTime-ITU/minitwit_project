@@ -166,6 +166,16 @@ public class App {
             context.render("timeline.html", model);
         });
 
+        //TODO: app.get(/username)
+
+        //TODO: app.get username follow
+
+        //TODO: app.get username unfollow
+
+        //TODO: app.get add message
+
+        
+
         // Get request for logging the user in.
         app.get("/login", context -> {
             if (context.attribute("user") != null) {
@@ -226,5 +236,7 @@ public class App {
 
             context.render("register.html", Map.of("error", error));
         });
+
+        //TODO: app.get logout
     }
 }

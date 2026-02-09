@@ -1,6 +1,9 @@
 package zerodowntime;
 
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
@@ -58,18 +61,18 @@ public class App {
 
     // Queries the database and returns a list of dictionaries
     private static Object queryDbInternal(String query, boolean one, Object... args) {
-        var results = new ArrayList<Map<String, Object>>();
+        List<Map<String, Object>> results = new ArrayList<>();
     
-        try (var db = connectDb(); var stmt = db.prepareStatement(query)) {
+        try (Connection db = connectDb(); PreparedStatement stmt = db.prepareStatement(query)) {
             for (int i = 0; i < args.length; i++) {
                 stmt.setObject(i + 1, args[i]);
             }
         
-            var rs = stmt.executeQuery();
-            var meta = rs.getMetaData();
+            ResultSet rs = stmt.executeQuery();
+            ResultSetMetaData meta = rs.getMetaData();
             
             while (rs.next()) {
-                var row = new HashMap<String, Object>();
+                Map<String, Object> row = new HashMap<>();
                 for (int i = 1; i <= meta.getColumnCount(); i++) {
                     row.put(meta.getColumnName(i), rs.getObject(i));
                 }
@@ -94,31 +97,19 @@ public class App {
             return;
         }
 
-        var app = Javalin.create(config -> {
+        Javalin app = Javalin.create(config -> {
             config.staticFiles.add("/static");
             config.fileRenderer(new JavalinPebble());
         }).start(7070); // Port 7070
         
-        // Make sure we are connected to the database each request and look
-        // -up the current user so that we know he's there
-        app.before(context -> {
-            Connection db = connectDb();
-            context.attribute("db", db);
-            
+        // Look up the current user so that we know he's there
+        app.before(context -> {            
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
                 Map<String, Object> user = queryDbOne("SELECT * FROM user WHERE user_id = ?", userId);
                 context.attribute("user", user);
             } else {
                 context.attribute("user", null);
-            }
-        });
-        
-        // Closes the database again at the end of the request.
-        app.after(context -> {
-            Connection db = context.attribute("db");
-            if (db != null) {
-                db.close();
             }
         });
         
@@ -135,23 +126,38 @@ public class App {
         app.get("/timeline", context -> {
             System.out.println("We got a visitor from: " + context.ip());
 
-            Connection db = context.attribute("db");
-            Map<String, Object> user = context.attribute("user");
-            
+            Map<String, Object> user = context.attribute("user"); 
             if (user == null) {
                 context.redirect("/public");
                 return;
             }
+            int userId = (int) user.get("user_id");
+
+            String sql = "SELECT message.*, user.* FROM message, user " +
+                "WHERE message.flagged = 0 AND message.author_id = user.user_id AND (" +
+                "user.user_id = ? OR " +
+                "user.user_id IN (SELECT whom_id FROM follower " +
+                "WHERE who_id = ?)) " +
+                "ORDER BY message.pub_date DESC LIMIT ?";
+
+            List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
             
-            // TODO: Change this 
-            context.result("Timeline for " + user.get("username"));
+            Map<String, Object> model = new HashMap<>();
+            model.put("messages", messages);
+            model.put("endpoint", "user_timeline");
+
+            Map<String, Object> g = new HashMap<>();
+            g.put("user", context.attribute("user"));
+            model.put("g", g);
+
+            context.render("timeline.html", model);
         });
 
         // Displays the latest messages of all users.
         app.get("/public", context -> {
-            String sql = "select message.*, user.* from message, user " +
-                "where message.flagged = 0 and message.author_id = user.user_id " +
-                "order by message.pub_date desc limit ?";
+            String sql = "SELECT message.*, user.* FROM message, user " +
+                "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
+                "ORDER BY message.pub_date DESC LIMIT ?";
 
             List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
 
@@ -175,9 +181,36 @@ public class App {
             context.render("login.html", Map.of("error", ""));
         });
 
-        // TODO: Post (submit) request for logging the user in.
+        // Post (submit) request for logging the user in.
         app.post("/login", context -> {
-            // add logic
+            if (context.attribute("user") != null) {
+                context.redirect("/timeline");
+                return;
+            }
+            
+            String username = context.formParam("username");
+            String password = context.formParam("password");
+            String error = null;
+
+            Map<String, Object> user = queryDbOne(
+                "SELECT * FROM user WHERE username = ?", 
+                username
+            );
+
+            if (user == null) {
+                error = "Invalid username";
+            }
+            else if (!BCrypt.checkpw(password, (String) user.get("pw_hash"))) {
+                error = "Invalid password";
+            }
+            else {
+                context.sessionAttribute("flashes", List.of("You were logged in"));
+                context.sessionAttribute("user_id", user.get("user_id"));
+                context.redirect("/timeline");
+                return;
+            }
+
+            context.render("login.html", Map.of("error", error));
         });
 
         // Get request for registing the user.

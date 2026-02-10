@@ -246,13 +246,14 @@ public class App {
             
             // Insert to database
             Connection db = context.attribute("db");
-            var sql_statement = db.prepareStatement(
+            try (var sql_statement = db.prepareStatement(
                 "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"
-            );
-            sql_statement.setObject(1, context.sessionAttribute("user_id"));
-            sql_statement.setObject(2, whomId);
-            sql_statement.executeUpdate();
-            db.commit();
+            )) {
+                sql_statement.setObject(1, context.sessionAttribute("user_id"));
+                sql_statement.setObject(2, whomId);
+                sql_statement.executeUpdate();
+                db.commit();
+            }
 
             // Flash message
             context.sessionAttribute("flashes", 

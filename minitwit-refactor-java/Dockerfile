@@ -14,6 +14,7 @@ COPY src ./src
 COPY control-java.sh /app/
 # If you want tests to run as well during the build, then delete the "DskipTests" flag
 RUN mvn -DskipTests package
+COPY minitwit-java.db /app/ 
 
 # RUNTIME OF CONTAINER
 
@@ -23,10 +24,16 @@ WORKDIR /app
 # We use the reference to the build stage above and copy from the dir the compiled code  
 COPY --from=build /app/target/*.jar /app/app.jar
 COPY control-java.sh /app/control-java.sh
+
+COPY minitwit-java.db /app/minitwit-java.db 
+
+# LINE ABOVE IS THE ACTUAL COPY OF THE DATA BASE?!
+
 # The flag +x here just makes it so we can execute the .sh file (I think it works like chmod 775 <insert name of sh-file>)
 RUN chmod +x /app/control-java.sh
 
 EXPOSE 7070
 
-ENTRYPOINT [ "/app/control-java.sh", "init" ]
-
+# NOTE: To start of remember to type "docker build -t <Name of your image> ."
+# After it is built, you run: "docker run --rm -it --entrypoint <Bash or sh> <name of the image>"
+# This will make it so you are running the container and you are able to execute commands in the terminal for that container

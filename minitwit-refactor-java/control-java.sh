@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-JAR_FILE="target/minitwit-refactor-0.0.1.jar"
+JAR_FILE="app.jar"
 DB_FILE="minitwit-java.db"
 
 if [ "$1" = "init" ]; then

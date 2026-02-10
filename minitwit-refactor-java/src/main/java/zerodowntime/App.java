@@ -7,9 +7,13 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import org.mindrot.jbcrypt.BCrypt;
-
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
@@ -94,17 +98,13 @@ public class App {
         } else {
             return null;
         }
-
     }
 
     //Format a timestamp for display.
     public static String formatDatetime(long timestamp) {
-        //Convert unix timestamp
-        java.time.Instant instant = java.time.Instant.ofEpochSecond(timestamp);
-        //Set the timezone to UTC
-        java.time.ZonedDateTime dt = instant.atZone(java.time.ZoneOffset.UTC);
-        //Format into "yyyy-MM-dd @ HH:mm" and return
-        return dt.format(java.time.format.DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
+        Instant instant = Instant.ofEpochSecond(timestamp);
+        ZonedDateTime dt = instant.atZone(ZoneOffset.UTC);
+        return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
     }
 
     //Return the gravatar image for the given email address
@@ -114,14 +114,14 @@ public class App {
         }
 
         try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] hash = md.digest(email.trim().toLowerCase().getBytes(java.nio.charset.StandardCharsets.UTF_8));
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(email.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder();
             for (byte b : hash) {
                 hex.append(String.format("%02x", b));
             }
             return "http://www.gravatar.com/avatar/" + hex + "?d=identicon&s=" + size;
-        } catch (java.security.NoSuchAlgorithmException e) {
+        } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }
     }
@@ -187,9 +187,9 @@ public class App {
 
         // Displays the latest messages of all users.
         app.get("/public", context -> {
-            String sql = "select message.*, user.* from message, user "
-                    + "where message.flagged = 0 and message.author_id = user.user_id "
-                    + "order by message.pub_date desc limit ?";
+            String sql = "select message.*, user.* from message, user " +
+                "where message.flagged = 0 and message.author_id = user.user_id " +
+                "order by message.pub_date desc limit ?";
 
             List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
 

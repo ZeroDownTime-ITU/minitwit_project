@@ -249,16 +249,7 @@ public class App {
                 sql_statement.setObject(2, whomId);
                 sql_statement.executeUpdate();
             }
-            // Insert to database
-            Connection db = context.attribute("db");
-            try (var sql_statement = db.prepareStatement(
-                "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"
-            )) {
-                sql_statement.setObject(1, context.sessionAttribute("user_id"));
-                sql_statement.setObject(2, whomId);
-                sql_statement.executeUpdate();
-                db.commit();
-            }
+ 
 
             context.sessionAttribute("flashes", 
                 List.of("You are now following \"" + username + "\"")

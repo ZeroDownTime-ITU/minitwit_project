@@ -226,7 +226,7 @@ public class App {
             context.render("register.html", Map.of("error", ""));
         });
 
-        // Follow
+        // Adds the current user as follower of the given user.
         app.get("/{username}/follow", context -> {
             String username = context.pathParam("username");
             
@@ -244,25 +244,18 @@ public class App {
             }
             
             // Make sql statement to add the whom ID to our current users follow value
-            String sql_string = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"; 
-            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)) {
-                sql_statement.setObject(1, context.sessionAttribute("user_id"));
-                sql_statement.setObject(2, whomId);
-                sql_statement.executeUpdate();
-            } catch (SQLException e) {
-                context.status(500);
-                context.sessionAttribute("flashes", List.of("Error following user"));  // ✅
-                return;
+            String sql = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"; 
+            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
+                stmt.setObject(1, context.sessionAttribute("user_id"));
+                stmt.setObject(2, whomId);
+                stmt.executeUpdate();
             }
 
-            // Output message
-            context.sessionAttribute("flashes", 
-                List.of("You are now following \"" + username + "\"")
-            );
+            context.sessionAttribute("flashes", List.of("You are now following \"" + username + "\""));
             context.redirect("/" + username);
         });
 
-        // unfollow
+        // Removes the current user as follower of the given user.
         app.get("/{username}/unfollow", context ->{
             String username = context.pathParam("username");
             
@@ -272,27 +265,22 @@ public class App {
                 return;
             }
 
-            Integer whomId = getUserId(username); // random to 23 Odessa Redepenning
+            Integer whomId = getUserId(username);
             if (whomId == null) {
                 context.status(404);
                 return;
             }
 
             // Make sql statement
-            String sql_string =  "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"; 
-            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)){
-                sql_statement.setObject(1, context.sessionAttribute("user_id"));
-                sql_statement.setObject(2, whomId);
-                sql_statement.executeUpdate();
-            } catch (SQLException e) {
-                context.status(500);
-                context.sessionAttribute("flashes", List.of("Error unfollowing user"));
-                return;
+            String sql =  "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"; 
+            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)){
+                stmt.setObject(1, context.sessionAttribute("user_id"));
+                stmt.setObject(2, whomId);
+                stmt.executeUpdate();
             }
-            context.sessionAttribute("flashes", 
-                List.of("You are no longer following \"" + username + "\"")
-            );
-        context.redirect("/" + username);  
+
+            context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
+            context.redirect("/" + username);  
 
         });
 
@@ -316,8 +304,7 @@ public class App {
             } else if (queryDbOne("SELECT user_id FROM user WHERE username = ?", username) != null) {
                 error = "The username is already taken";
             } else {
-                // Hash the password
-                String pwHash = BCrypt.hashpw(password, BCrypt.gensalt());
+                String pwHash = BCrypt.hashpw(password, BCrypt.gensalt()); // Hash the password
                 
                 String sql = "INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)";
                 try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {

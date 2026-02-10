@@ -208,22 +208,20 @@ public class App {
                 context.status(404);
                 return;
             }
-            // Insert to database
-            Connection db = context.attribute("db");
-            var sql_statement = db.prepareStatement(
-                "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"
-            );
-            sql_statement.setObject(1, context.sessionAttribute("user_id"));
-            sql_statement.setObject(2, whomId);
-            sql_statement.executeUpdate();
-            db.commit();
-                        // Flash message
+
+            // Make sql statement
+            try (Connection db = connectDb()) {
+                var sql_statement = db.prepareStatement(
+                    "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"
+                );
+                sql_statement.setObject(1, context.sessionAttribute("user_id"));
+                sql_statement.setObject(2, whomId);
+                sql_statement.executeUpdate();
+            }
+
             context.sessionAttribute("flashes", 
                 List.of("You are no longer following \"" + username + "\"")
             );
-
-            // Redirect
-            context.redirect("/" + username);
         
         });
 
@@ -231,35 +229,30 @@ public class App {
         app.get("/{username}/follow", context -> {
             String username = context.pathParam("username");
             
-            // Checks if user is logged in. 
             if (context.attribute("user") == null) {
-                context.status(401);  // PY: if not g.user: abort(401)
+                context.status(401);
                 return;
             }
             
-            // Find the userID based on their user name. 
-            Integer whomId = getUserId(username); // random to 23 Odessa Redepenning
+            Integer whomId = getUserId(username);
             if (whomId == null) {
                 context.status(404);
                 return;
             }
             
-            // Insert to database
-            Connection db = context.attribute("db");
-            var sql_statement = db.prepareStatement(
-                "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"
-            );
-            sql_statement.setObject(1, context.sessionAttribute("user_id"));
-            sql_statement.setObject(2, whomId);
-            sql_statement.executeUpdate();
-            db.commit();
+            // Make sql statement
+            try (Connection db = connectDb()) {
+                var sql_statement = db.prepareStatement(
+                    "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"
+                );
+                sql_statement.setObject(1, context.sessionAttribute("user_id"));
+                sql_statement.setObject(2, whomId);
+                sql_statement.executeUpdate();
+            }
 
-            // Flash message
             context.sessionAttribute("flashes", 
                 List.of("You are now following \"" + username + "\"")
             );
-
-            // Redirect
             context.redirect("/" + username);
         });
 

@@ -213,8 +213,7 @@ public class App {
             
             // Make sql statement to add the whom ID to our current users follow value
             String sql_string = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"; 
-            try (Connection db = connectDb()) {
-                var sql_statement = db.prepareStatement(sql_string);
+            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)) {
                 sql_statement.setObject(1, context.sessionAttribute("user_id"));
                 sql_statement.setObject(2, whomId);
                 sql_statement.executeUpdate();
@@ -249,8 +248,7 @@ public class App {
 
             // Make sql statement
             String sql_string =  "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"; 
-            try (Connection db = connectDb()) {
-                var sql_statement = db.prepareStatement(sql_string);
+            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)){
                 sql_statement.setObject(1, context.sessionAttribute("user_id"));
                 sql_statement.setObject(2, whomId);
                 sql_statement.executeUpdate();

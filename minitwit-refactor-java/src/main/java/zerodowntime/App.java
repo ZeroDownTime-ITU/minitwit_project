@@ -32,6 +32,11 @@ public class App {
         return DriverManager.getConnection(DATABASE);
     }
 
+    public static Integer getUserId(String username) {
+        // Mathias code here. Dependency for Kasper 
+        return 23; // random user id I have put here for testing. 
+    }
+    
     // Creates the database tables
     public static void initDb() throws Exception{
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
@@ -188,6 +193,77 @@ public class App {
             }
             context.render("register.html", Map.of("error", ""));
         });
+
+        // Follow
+        app.get("/{username}/follow", context -> {
+            String username = context.pathParam("username");
+            
+            // Is the user logged in? 
+            if (context.attribute("user") == null) {
+                context.status(401);
+                return;
+            }
+            
+            // Get the ID of the user we wish to follow. 
+            Integer whomId = getUserId(username);
+            if (whomId == null) {
+                context.status(404);
+                return;
+            }
+            
+            // Make sql statement to add the whom ID to our current users follow value
+            String sql_string = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)"; 
+            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)) {
+                sql_statement.setObject(1, context.sessionAttribute("user_id"));
+                sql_statement.setObject(2, whomId);
+                sql_statement.executeUpdate();
+            } catch (SQLException e) {
+                context.status(500);
+                context.sessionAttribute("flashes", List.of("Error following user"));  // ✅
+                return;
+            }
+
+            // Output message
+            context.sessionAttribute("flashes", 
+                List.of("You are now following \"" + username + "\"")
+            );
+            context.redirect("/" + username);
+        });
+
+        // unfollow
+        app.get("/{username}/unfollow", context ->{
+            String username = context.pathParam("username");
+            
+            // Checks if user is logged in. 
+            if (context.attribute("user") == null) {
+                context.status(401);  
+                return;
+            }
+
+            Integer whomId = getUserId(username); // random to 23 Odessa Redepenning
+            if (whomId == null) {
+                context.status(404);
+                return;
+            }
+
+            // Make sql statement
+            String sql_string =  "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"; 
+            try (Connection db = connectDb(); var sql_statement = db.prepareStatement(sql_string)){
+                sql_statement.setObject(1, context.sessionAttribute("user_id"));
+                sql_statement.setObject(2, whomId);
+                sql_statement.executeUpdate();
+            } catch (SQLException e) {
+                context.status(500);
+                context.sessionAttribute("flashes", List.of("Error unfollowing user"));
+                return;
+            }
+            context.sessionAttribute("flashes", 
+                List.of("You are no longer following \"" + username + "\"")
+            );
+        context.redirect("/" + username);  
+
+        });
+
 
         // Post (submit) request for registering the user.
         app.post("/register", context -> {

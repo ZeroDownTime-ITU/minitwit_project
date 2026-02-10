@@ -18,3 +18,23 @@ But later on it might be better to not include it (for better build times, even 
 NOTES ON DOCKER-COMPOSE.YML
 
   We get images from the could here (the maven version we are using) as well as we are running this 
+
+
+Notes on the Dockerfile
+  The location of the FROM command is really important, as it overrides the previously mounted image
+  Therefore the Dockerfile did not work when 
+    FROM maven:4.0.0-rc-5-eclipse-temurin-21 AS build
+    FROM eclipse-temurin:21-jre
+    
+    because the second line would dismount the image used which would make the later command call to mvn not work 
+
+
+To run this i think we need to change the path in the app.java file to just be without the projectDir variable 
+also atm, in order to run this, I didnt use the control-java.sh file because it uses maven 
+
+instead i used: java -jar /app/app.jar <Type your command/argument>
+
+First build the docker image: docker build -t <Name of image> .
+
+Then you write docker run --rm -p 7070:7070 -it --entrypoint bash <name of the image>
+Now you should be in the terminal of the container (to exit: CTRL + D) 

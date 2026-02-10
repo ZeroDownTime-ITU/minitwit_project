@@ -21,7 +21,7 @@ public class App {
     // Configuration
     private static String path = App.class.getProtectionDomain().getCodeSource().getLocation().getPath();
     private static String projectDir = new java.io.File(path).getParentFile().getParentFile().getAbsolutePath();
-    public static final String DATABASE = "jdbc:sqlite:" + projectDir + "/minitwit-java.db";
+    public static final String DATABASE = "jdbc:sqlite:"+ "/minitwit-java.db";
     
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
@@ -91,6 +91,8 @@ public class App {
         if (args.length > 0 && args[0].equals("init")) {
             initDb();
             System.out.println("Database initialized. Exiting.");
+            System.out.println("DATABASE URL: " + DATABASE);
+
             return;
         }
 

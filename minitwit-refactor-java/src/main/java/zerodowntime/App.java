@@ -1,11 +1,9 @@
 package zerodowntime;
 
 import java.sql.DriverManager;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -40,7 +38,7 @@ public class App {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
         String sql = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-        try (Connection db = connectDb(); Statement stmt = db.createStatement()) { //Auto-close when done
+        try (Connection db = connectDb(); var stmt = db.createStatement()) { //Auto-close when done
             for (String command : sql.split(";")) {
                 if (!command.trim().isEmpty()) {
                     stmt.executeUpdate(command.trim());
@@ -63,7 +61,7 @@ public class App {
     private static Object queryDbInternal(String query, boolean one, Object... args) {
         List<Map<String, Object>> results = new ArrayList<>();
     
-        try (Connection db = connectDb(); PreparedStatement stmt = db.prepareStatement(query)) {
+        try (Connection db = connectDb(); var stmt = db.prepareStatement(query)) {
             for (int i = 0; i < args.length; i++) {
                 stmt.setObject(i + 1, args[i]);
             }
@@ -106,7 +104,10 @@ public class App {
         app.before(context -> {            
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
-                Map<String, Object> user = queryDbOne("SELECT * FROM user WHERE user_id = ?", userId);
+                Map<String, Object> user = queryDbOne(
+                    "SELECT * FROM user WHERE user_id = ?", 
+                    userId
+                );
                 context.attribute("user", user);
             } else {
                 context.attribute("user", null);
@@ -139,7 +140,6 @@ public class App {
                 "user.user_id IN (SELECT whom_id FROM follower " +
                 "WHERE who_id = ?)) " +
                 "ORDER BY message.pub_date DESC LIMIT ?";
-
             List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
             
             Map<String, Object> model = new HashMap<>();
@@ -158,7 +158,6 @@ public class App {
             String sql = "SELECT message.*, user.* FROM message, user " +
                 "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
                 "ORDER BY message.pub_date DESC LIMIT ?";
-
             List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
 
             Map<String, Object> model = new HashMap<>();
@@ -244,8 +243,8 @@ public class App {
                 // Hash the password
                 String pwHash = BCrypt.hashpw(password, BCrypt.gensalt());
                 
-                try (Connection db = connectDb()) {
-                    var stmt = db.prepareStatement("INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)");
+                String sql = "INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)";
+                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
                     stmt.setString(1, username);
                     stmt.setString(2, email);
                     stmt.setString(3, pwHash);

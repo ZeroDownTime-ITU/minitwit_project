@@ -87,6 +87,21 @@ public class App {
         return results;
     }
 
+    //Convenience method to look up the id for a username.
+    public static getUserId(username){
+
+    }
+
+    //Format a timestamp for display.
+    public static formatDatetime(timestamp){
+
+    }
+
+    //Return the gravatar image for the given email address
+    public static gravatarUrl(email, size=80){
+        
+    }
+
     public static void main(String[] args) throws Exception {
         if (args.length > 0 && args[0].equals("init")) {
             initDb();

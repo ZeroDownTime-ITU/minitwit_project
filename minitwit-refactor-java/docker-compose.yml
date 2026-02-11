@@ -2,10 +2,11 @@ services:
   app:
     build: 
       context: .
+      target: build  # This ensures you have Maven inside the container
     ports:
       - "7070:7070"
     volumes:
-      - .:/workspace:cached   # This is correct IF your compose is in minitwit-refactor-java
+      - .:/workspace:cached
       - db-data:/data
     environment:
       - DB_FILE=/data/minitwit-java.db

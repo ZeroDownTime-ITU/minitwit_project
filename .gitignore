@@ -18,7 +18,6 @@ dependency-reduced-pom.xml
 .classpath
 .project
 .settings/
-.vscode/
 
 # Database and Logs
 *.db

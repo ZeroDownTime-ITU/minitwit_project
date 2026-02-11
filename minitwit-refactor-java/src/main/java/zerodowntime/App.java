@@ -160,8 +160,7 @@ public class App {
             config.fileRenderer(new JavalinPebble());
         }).start(7070); // Port 7070
 
-        // Make sure we are connected to the database each request and look
-        // -up the current user so that we know he's there
+        // Lookup the current user so that we know he's there
         app.before(context -> {
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
@@ -405,8 +404,8 @@ public class App {
         });
 
         app.get("/logout", context -> {
-            context.sessionAttribute("flash", "You were logged out");
             context.sessionAttribute("user_id", null);
+            context.sessionAttribute("flash", "You were logged out");
             context.redirect("/public");
 
             String flash = context.sessionAttribute("flash");

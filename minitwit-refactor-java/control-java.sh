@@ -1,6 +1,6 @@
-#!/bin/bash
+#!/bin/sh
 
-JAR_FILE="target/minitwit-refactor-0.0.1.jar"
+JAR_FILE="app.jar"
 DB_FILE="minitwit-java.db"
 
 if [ "$1" = "init" ]; then
@@ -17,12 +17,22 @@ elif [ "$1" = "build" ]; then
 
 elif [ "$1" = "start" ]; then
     echo "Starting minitwit-java..."
-    if [ ! -f "$JAR_FILE" ]; then
-        echo "JAR not found. Building..."
-        mvn clean package
+    if [ ! -f "$DB_FILE" ]; then
+        echo "DB not found. Initialising DB..."
+        mvn -x compile exec:java -Dexec.mainClass="zerodowntime.app" -Dexec.args="init"
+
+    else 
+        echo "DB exists."
     fi
-    nohup java -jar "$JAR_FILE" > out.log 2>&1 &
-    echo "Started with PID $!"
+    #if [ ! -f "$JAR_FILE" ]; then
+    #    echo "JAR not found. Building..."
+    #    mvn clean package
+    #fi
+    exec java -jar "$JAR_FILE"
+
+    # EDITED THIS OUT TO RUN THE SEVER WITH DOCKER
+    #nohup java -jar "$JAR_FILE" > out.log 2>&1 &
+    #echo "Started with PID $!"
 
 elif [ "$1" = "stop" ]; then
     echo "Stopping minitwit..."

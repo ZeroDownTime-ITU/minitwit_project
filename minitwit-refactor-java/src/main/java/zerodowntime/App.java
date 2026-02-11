@@ -22,7 +22,7 @@ public class App {
     // Configuration
     private static String path = App.class.getProtectionDomain().getCodeSource().getLocation().getPath();
     private static String projectDir = new java.io.File(path).getParentFile().getParentFile().getAbsolutePath();
-    public static final String DATABASE = "jdbc:sqlite:" + projectDir + "/minitwit-java.db";
+    public static final String DATABASE = "jdbc:sqlite:"+ "/minitwit-java.db";
     
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
@@ -97,6 +97,8 @@ public class App {
         if (args.length > 0 && args[0].equals("init")) {
             initDb();
             System.out.println("Database initialized. Exiting.");
+            System.out.println("DATABASE URL: " + DATABASE);
+
             return;
         }
 
@@ -332,6 +334,13 @@ public class App {
             context.render("register.html", Map.of("error", error));
         });
 
-        //TODO: app.get logout
+        app.get("/logout", context ->{
+            context.sessionAttribute("flash", "You were logged out");
+            context.sessionAttribute("user_id", null);
+            context.redirect("/public");
+
+            String flash = context.sessionAttribute("flash");
+            context.sessionAttribute(flash, null);
+        });
     }
 }

@@ -5,7 +5,7 @@
 <div class="page">
   <h1>MiniTwit</h1>
   <div class="navigation">
-  {% if g.user %}
+  {% if g.user is not empty %}
     <a href="/timeline">my timeline</a> |
     <a href="/public">public timeline</a> |
     <a href="/logout">sign out [{{ g.user.username }}]</a>
@@ -16,7 +16,7 @@
   {% endif %}
   </div>
 
-  {% if flashes %}
+  {% if flashes is not empty %}
     <ul class="flashes">
     {% for message in flashes %}
       <li>{{ message }}</li>

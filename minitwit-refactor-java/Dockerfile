@@ -14,7 +14,7 @@ RUN mvn dependency:go-offline
 COPY src ./src
 
 # Build the app (used for production)
-# RUN mvn -DskipTests package
+RUN mvn -DskipTests package
 
 # --- PRODUCTION STAGE ---
 FROM eclipse-temurin:21-jre AS production

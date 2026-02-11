@@ -11,5 +11,5 @@
       ]
     }
   },
-  "postCreateCommand": "git config --global --add safe.directory /workspace && mvn dependency:go-offline && mvn compile exec:java -Dexec.mainClass=zerodowntime.App -Dexec.args='init'"
+  "postCreateCommand": "git config --global --add safe.directory /workspace && mkdir -p data && mvn install -DskipTests"
 }

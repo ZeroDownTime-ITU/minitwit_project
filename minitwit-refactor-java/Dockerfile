@@ -11,7 +11,7 @@ WORKDIR /app
     # https://docs.docker.com/build/cache/#how-the-build-cache-works
 COPY pom.xml .
 COPY src ./src
-COPY control-java.sh /app/
+
 # If you want tests to run as well during the build, then delete the "DskipTests" flag
 RUN mvn -DskipTests package
 
@@ -22,11 +22,8 @@ WORKDIR /app
 
 # We use the reference to the build stage above and copy from the dir the compiled code  
 COPY --from=build /app/target/minitwit-refactor-*.jar /app/app.jar
-COPY control-java.sh /app/control-java.sh
-# The flag +x here just makes it so we can execute the .sh file (I think it works like chmod 775 <insert name of sh-file>)
-RUN chmod +x /app/control-java.sh
 
 EXPOSE 7070
 
-ENTRYPOINT [ "/app/control-java.sh", "init" ]
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]
 

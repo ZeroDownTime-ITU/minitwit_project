@@ -190,6 +190,55 @@ public class App {
             context.render("timeline.html", model);
         });
 
+        // Displays a user's tweets.
+        app.get("/{username}", context -> {
+            String username = context.pathParam("username");
+            
+            // 1. Fetch the profile user
+            Map<String, Object> profileUser = queryDbOne(
+                "SELECT * FROM user WHERE username = ?", 
+                username
+            );
+
+            if (profileUser == null) {
+                context.status(404);
+                return;
+            }
+
+            // 2. Check if the current logged-in user follows this profile
+            boolean followed = false;
+            Map<String, Object> currentUser = context.attribute("user");
+            
+            if (currentUser != null) {
+                Map<String, Object> followCheck = queryDbOne(
+                    "SELECT 1 FROM follower WHERE who_id = ? AND whom_id = ?",
+                    currentUser.get("user_id"), 
+                    profileUser.get("user_id")
+                );
+                followed = (followCheck != null);
+            }
+
+            // 3. Fetch the messages for this specific user
+            String sql = "SELECT message.*, user.* FROM message, user WHERE " +
+                        "user.user_id = message.author_id AND user.user_id = ? " +
+                        "ORDER BY message.pub_date DESC LIMIT ?";
+            List<Map<String, Object>> messages = queryDb(sql, profileUser.get("user_id"), PER_PAGE);
+
+            // 4. Build the model for Pebble
+            Map<String, Object> model = new HashMap<>();
+            model.put("messages", messages);
+            model.put("followed", followed);
+            model.put("profile_user", profileUser);
+            model.put("endpoint", "user_timeline");
+
+            // Global 'g' object mimic for template compatibility
+            Map<String, Object> g = new HashMap<>();
+            g.put("user", currentUser);
+            model.put("g", g);
+
+            context.render("timeline.html", model);
+        });
+
         app.get("/login", context -> {
             context.render("login.html", Map.of("error", ""));
         });

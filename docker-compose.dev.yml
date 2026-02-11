@@ -1,0 +1,18 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    working_dir: /workspace
+    volumes:
+      - ./minitwit-refactor-java:/workspace
+      - m2-dev:/root/.m2
+      - db-dev:/data
+    ports:
+      - "7070:7070"
+    environment:
+      - DB_FILE=/data/minitwit.db
+
+volumes:
+  m2-dev:
+  db-dev:

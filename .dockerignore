@@ -1,0 +1,36 @@
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+
+# Build artifacts
+minitwit-refactor-java/target/
+*.class
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Dev container
+.devcontainer
+
+# Docker
+docker-compose*.yml
+Dockerfile*
+
+# Logs
+*.log
+
+# Database (don't include in image)
+*.db
+*.db-journal
+
+# Temporary files
+tmp/
+temp/

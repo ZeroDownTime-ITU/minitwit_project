@@ -1,0 +1,37 @@
+local dependancies for your linux
+
+VSCode
+Docker
+ssh configuration
+
+Dev Environment
+
+1. open project directory in vscode i.e. minitwit_project.
+
+2. command pallete action
+	-> press F1 or ctrl+Shift+P (cmd+shift+p for mac)
+	-> Type Dev Containers: Reopen in Container
+	-> wait for container to start
+	-> you are now in the dev environment with all dependancies like JDK and Maven
+
+	how to compile
+	-> mvn clean compile
+
+	how to run
+	-> mvn exec:java -Dexec.mainClass=zerodowntime.App
+
+	view the app by visiting
+	-> Open browser to: http://localhost:7070
+	-> On remote server: http://your-server-ip:7070
+	
+	run tesst
+	-> mvn test
+
+	how to end session
+	-> close VSCode
+	-> or command palette action 
+		-> F1 or ctrl+shift+p (cmd+shift+p)
+		-> Dev Containers: Reopen Folder Locally 
+Prod Environment
+
+Test Environment

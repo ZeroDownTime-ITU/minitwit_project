@@ -22,7 +22,7 @@ public class App {
     // Configuration
     private static String path = App.class.getProtectionDomain().getCodeSource().getLocation().getPath();
     private static String projectDir = new java.io.File(path).getParentFile().getParentFile().getAbsolutePath();
-    public static final String DATABASE = "jdbc:sqlite:"+ "/minitwit-java.db";
+    public static final String DATABASE = "jdbc:sqlite:minitwit-java.db"; //changed to relative path from absolute path //YA
     
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;

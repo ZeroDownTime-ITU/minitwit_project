@@ -1,9 +1,15 @@
 services:
   app:
-    build: . #Build from Dockerfile
+    build: 
+      context: .
+      target: build  # Tells Dev Container to stop at the Maven stage, not the JRE stage
     ports:
       - "7070:7070"
     volumes:
-      - ./data:/app/data # Map project's data folder to container
+      - .:/workspace:cached   # Maps your code so edits are live
+      - db-data:/data         # Persistent volume for your SQLite DB
     environment:
-      - DB_FILE=data/minitwit-java.db
+      - DB_FILE=/data/minitwit-java.db
+
+volumes:
+  db-data:

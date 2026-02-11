@@ -7,9 +7,11 @@ services:
       - "7070:7070"
     volumes:
       - .:/workspace:cached
+      - ../.git:/workspace/.git:ro
       - db-data:/data
     environment:
       - DB_FILE=/data/minitwit-java.db
+    command: sleep infinity
 
 volumes:
   db-data:

@@ -11,5 +11,5 @@
       ]
     }
   },
-  "postCreateCommand": "git config --global --add safe.directory /workspace && mkdir -p data && mvn install -DskipTests"
+  "postCreateCommand": "gitconfig --global --add safe.directory /workspace && mkdir -p data && mvn install -DskipTests"
 }

@@ -1,12 +1,12 @@
 <!doctype html>
 <title>{% block title %}Welcome{% endblock %} | MiniTwit</title>
-<link rel="stylesheet" type="text/css" href="/style.css">
+<link rel="stylesheet" type="text/css" href="/static/style.css">
 
 <div class="page">
   <h1>MiniTwit</h1>
   <div class="navigation">
   {% if g.user is not empty %}
-    <a href="/timeline">my timeline</a> |
+    <a href="/">my timeline</a> |
     <a href="/public">public timeline</a> |
     <a href="/logout">sign out [{{ g.user.username }}]</a>
   {% else %}

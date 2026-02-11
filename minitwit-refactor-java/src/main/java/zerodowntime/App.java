@@ -36,6 +36,10 @@ public class App {
     public static final boolean DEBUG = true;
     public static final String SECRET_KEY = "development key";
 
+    private static final String ROUTE_HOME = "/";
+    private static final String ROUTE_PUBLIC = "/public";
+    private static final String ROUTE_LOGIN = "/login";
+
     // Returns a new connection to the database
     public static Connection connectDb() throws SQLException {
         return DriverManager.getConnection(DATABASE);
@@ -156,12 +160,14 @@ public class App {
         }
 
         Javalin app = Javalin.create(config -> {
-            config.staticFiles.add("/static");
+            config.staticFiles.add(staticFiles -> {
+                staticFiles.hostedPath = "/static";
+                staticFiles.directory = "/static";
+            });
             config.fileRenderer(new JavalinPebble());
         }).start(7070); // Port 7070
 
-        // Make sure we are connected to the database each request and look
-        // -up the current user so that we know he's there
+        // Lookup the current user so that we know he's there
         app.before(context -> {
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
@@ -176,21 +182,16 @@ public class App {
 
         // ---------------- Routes/endpoints below ----------------
 
-        // Redirect to timeline if empty route
-        app.get("/", context -> {
-            context.redirect("/timeline");
-        });
-
         // Shows a users timeline or if no user is logged in it will
-        // redirect to the public timeline. This timeline shows the user's
+        // redirect to the public timeline. This shows the user's
         // messages as well as all the messages of followed users.
-        app.get("/timeline", context -> {
+        app.get(ROUTE_HOME, context -> {
             System.out.println("We got a visitor from: " + context.ip());
 
             Map<String, Object> user = context.attribute("user");
 
             if (user == null) {
-                context.redirect("/public");
+                context.redirect(ROUTE_PUBLIC);
                 return;
             }
             int userId = (int) user.get("user_id");
@@ -207,7 +208,7 @@ public class App {
 
             Map<String, Object> model = new HashMap<>();
             model.put("messages", messages);
-            model.put("endpoint", "user_timeline");
+            model.put("endpoint", "timeline");
 
             Map<String, Object> g = new HashMap<>();
             g.put("user", context.attribute("user"));
@@ -217,7 +218,7 @@ public class App {
         });
 
         // Displays the latest messages of all users.
-        app.get("/public", context -> {
+        app.get(ROUTE_PUBLIC, context -> {
             String sql = "SELECT message.*, user.* FROM message, user " +
                     "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
                     "ORDER BY message.pub_date DESC LIMIT ?";
@@ -237,18 +238,18 @@ public class App {
         });
 
         // Get request for logging the user in.
-        app.get("/login", context -> {
+        app.get(ROUTE_LOGIN, context -> {
             if (context.attribute("user") != null) {
-                context.redirect("/timeline");
+                context.redirect(ROUTE_HOME);
                 return;
             }
             context.render("login.html", Map.of("error", ""));
         });
 
         // Post (submit) request for logging the user in.
-        app.post("/login", context -> {
+        app.post(ROUTE_LOGIN, context -> {
             if (context.attribute("user") != null) {
-                context.redirect("/timeline");
+                context.redirect(ROUTE_HOME);
                 return;
             }
 
@@ -267,7 +268,7 @@ public class App {
             } else {
                 context.sessionAttribute("flashes", List.of("You were logged in"));
                 context.sessionAttribute("user_id", user.get("user_id"));
-                context.redirect("/timeline");
+                context.redirect(ROUTE_HOME);
                 return;
             }
 
@@ -277,94 +278,10 @@ public class App {
         // Get request for registing the user.
         app.get("/register", context -> {
             if (context.attribute("user") != null) {
-                context.redirect("/timeline");
+                context.redirect(ROUTE_HOME);
                 return;
             }
             context.render("register.html", Map.of("error", ""));
-        });
-
-        // Adds the current user as follower of the given user.
-        app.get("/{username}/follow", context -> {
-            String username = context.pathParam("username");
-
-            // Is the user logged in?
-            if (context.attribute("user") == null) {
-                context.status(401);
-                return;
-            }
-
-            // Get the ID of the user we wish to follow.
-            Integer whomId = getUserId(username);
-            if (whomId == null) {
-                context.status(404);
-                return;
-            }
-
-            // Make sql statement to add the whom ID to our current users follow value
-            String sql = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)";
-            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
-                stmt.setObject(1, context.sessionAttribute("user_id"));
-                stmt.setObject(2, whomId);
-                stmt.executeUpdate();
-            }
-
-            context.sessionAttribute("flashes", List.of("You are now following \"" + username + "\""));
-            context.redirect("/" + username);
-        });
-
-        // Removes the current user as follower of the given user.
-        app.get("/{username}/unfollow", context -> {
-            String username = context.pathParam("username");
-
-            // Checks if user is logged in.
-            if (context.attribute("user") == null) {
-                context.status(401);
-                return;
-            }
-
-            Integer whomId = getUserId(username);
-            if (whomId == null) {
-                context.status(404);
-                return;
-            }
-
-            // Make sql statement
-            String sql = "DELETE FROM follower WHERE who_id = ? AND whom_id = ?";
-            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
-                stmt.setObject(1, context.sessionAttribute("user_id"));
-                stmt.setObject(2, whomId);
-                stmt.executeUpdate();
-            }
-
-            context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
-            context.redirect("/" + username);
-        });
-
-        // Registers a new message for the user.
-        app.post("/add_message", context -> {
-            if (context.sessionAttribute("user_id") == null) // Check if user is logged in
-            {
-                context.status(401); // Sends a not authorized response
-                return;
-            }
-            // Get the text from form data
-            String text = context.formParam("text");
-
-            // Check if string exists through null check and by checking if string is empty
-            if (text != null && !text.isEmpty()) {
-                Integer userId = context.sessionAttribute("user_id"); // Get User ID
-                long currentTime = System.currentTimeMillis() / 1000; // Get timestamp, convert from ms to seconds
-
-                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; // SQL code
-                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql);) {
-                    // Statement specifices with columns of the message table to change, temporarily
-                    // with placeholder values ? & 0
-                    stmt.setInt(1, userId); // Fill authorId
-                    stmt.setString(2, text); // Fill text
-                    stmt.setLong(3, currentTime); // Fill currentTime
-                    stmt.executeUpdate(); // Update the table with the new values
-                }
-            }
         });
 
         // Post (submit) request for registering the user.
@@ -397,7 +314,7 @@ public class App {
                 }
 
                 context.sessionAttribute("flashes", List.of("You were successfully registered and can login now"));
-                context.redirect("/login");
+                context.redirect(ROUTE_LOGIN);
                 return;
             }
 
@@ -405,12 +322,148 @@ public class App {
         });
 
         app.get("/logout", context -> {
-            context.sessionAttribute("flash", "You were logged out");
             context.sessionAttribute("user_id", null);
+            context.sessionAttribute("flash", "You were logged out");
             context.redirect("/public");
 
             String flash = context.sessionAttribute("flash");
             context.sessionAttribute(flash, null);
         });
+
+        // Registers a new message for the user.
+        app.post("/add_message", context -> {
+            if (context.sessionAttribute("user_id") == null) // Check if user is logged in
+            {
+                context.status(401); // Sends a not authorized response
+                return;
+            }
+
+            String text = context.formParam("text");
+
+            // Check if string exists through null check and by checking if string is empty
+            if (text != null && !text.isEmpty()) {
+                Integer userId = context.sessionAttribute("user_id"); // Get User ID
+                long currentTime = System.currentTimeMillis() / 1000; // Get timestamp, convert from ms to seconds
+
+                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; // SQL code
+                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql);) {
+                    stmt.setInt(1, userId);
+                    stmt.setString(2, text);
+                    stmt.setLong(3, currentTime);
+                    stmt.executeUpdate();
+                }
+                context.sessionAttribute("flashes", List.of("Your message was recorded"));
+            }
+            context.redirect(ROUTE_HOME);
+        });
+
+        // Adds the current user as follower of the given user.
+        app.get("/{username}/follow", context -> {
+            String username = context.pathParam("username");
+
+            // Is the user logged in?
+            if (context.attribute("user") == null) {
+                context.status(401);
+                return;
+            }
+
+            // Get the ID of the user we wish to follow.
+            Integer whomId = getUserId(username);
+            if (whomId == null) {
+                context.status(404);
+                return;
+            }
+
+            // Make sql statement to add the whom ID to our current users follow value
+            String sql = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)";
+            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
+                stmt.setObject(1, context.sessionAttribute("user_id"));
+                stmt.setObject(2, whomId);
+                stmt.executeUpdate();
+            }
+
+            context.sessionAttribute("flashes", List.of("You are now following \"" + username + "\""));
+            context.redirect("/" + username);
+        });
+
+        // // Display's a user's tweets.
+        app.get("/{username}", context -> {
+            String username = context.pathParam("username");
+
+            // Get the profile user
+            Map<String, Object> profileUser = queryDbOne(
+                    "SELECT * FROM user WHERE username = ?",
+                    username);
+
+            if (profileUser == null) {
+                context.status(404);
+                return;
+            }
+
+            // Check if current user is following this profile user
+            boolean followed = false;
+            Map<String, Object> currentUser = context.attribute("user");
+
+            if (currentUser != null) {
+                Integer whoId = (Integer) currentUser.get("user_id");
+                Integer whomId = (Integer) profileUser.get("user_id");
+
+                Map<String, Object> followCheck = queryDbOne(
+                        "SELECT 1 FROM follower WHERE who_id = ? AND whom_id = ?",
+                        whoId, whomId);
+
+                followed = (followCheck != null);
+            }
+
+            // Get messages from this specific user
+            String sql = "SELECT message.*, user.* FROM message, user " +
+                    "WHERE user.user_id = message.author_id AND user.user_id = ? " +
+                    "ORDER BY message.pub_date DESC LIMIT ?";
+            List<Map<String, Object>> messages = queryDb(sql, profileUser.get("user_id"),
+                    PER_PAGE);
+
+            hydrateMessages(messages);
+
+            Map<String, Object> model = new HashMap<>();
+            model.put("messages", messages);
+            model.put("followed", followed);
+            model.put("profile_user", profileUser);
+            model.put("endpoint", "user_timeline");
+
+            Map<String, Object> g = new HashMap<>();
+            g.put("user", currentUser);
+            model.put("g", g);
+
+            context.render("timeline.html", model);
+        });
+
+        // Removes the current user as follower of the given user.
+        app.get("/{username}/unfollow", context -> {
+            String username = context.pathParam("username");
+
+            // Checks if user is logged in.
+            if (context.attribute("user") == null) {
+                context.status(401);
+                return;
+            }
+
+            Integer whomId = getUserId(username);
+            if (whomId == null) {
+                context.status(404);
+                return;
+            }
+
+            // Make sql statement
+            String sql = "DELETE FROM follower WHERE who_id = ? AND whom_id = ?";
+            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
+                stmt.setObject(1, context.sessionAttribute("user_id"));
+                stmt.setObject(2, whomId);
+                stmt.executeUpdate();
+            }
+
+            context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
+            context.redirect("/" + username);
+        });
+
     }
 }

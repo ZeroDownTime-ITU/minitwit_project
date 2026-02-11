@@ -6,6 +6,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -306,6 +307,7 @@ public class App {
                 return;
             }
 
+
             // Make sql statement
             String sql =  "DELETE FROM follower WHERE who_id = ? AND whom_id = ?"; 
             try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)){
@@ -319,6 +321,36 @@ public class App {
 
         });
 
+        //Registers a new message for the user.
+        app.post("/add_message", context -> {
+            if(context.sessionAttribute("user_id") == null) //Check if user is logged in
+            {       
+                context.status(401); //Sends a not authorized response 
+                return; 
+            }
+            //Get the text from form data 
+            String text = context.formParam("text"); 
+
+            //Check if string exists through null check and by checking if string is empty
+            if(text != null && !text.isEmpty()) 
+            {   
+                Integer userId = context.sessionAttribute("user_id"); //Get User ID
+                long currentTime = System.currentTimeMillis() / 1000; //Get timestamp, convert from ms to seconds
+
+                try (Connection db = connectDb()) {
+                    String statement = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; //SQL code
+                    //Statement specifices with columns of the message table to change, temporarily with placeholder values ? & 0 
+                    var stmt = db.prepareStatement(statement);
+                    stmt.setInt(1, userId); //Fill authorId
+                    stmt.setString(2, text); //Fill text 
+                    stmt.setLong(3, currentTime); //Fill currentTime
+                    stmt.executeUpdate(); //Update the table with the new values
+                } catch (SQLException e) { //Catches and prints error if the operation fails 
+                    e.printStackTrace();
+                    context.status(500);
+                }
+            }
+        });
 
         // Post (submit) request for registering the user.
         app.post("/register", context -> {

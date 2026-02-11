@@ -131,6 +131,18 @@ public class App {
         }
     }
 
+    // Helper method to hydrate message data with gravatar URLs and formatted dates
+    private static void hydrateMessages(List<Map<String, Object>> messages) {
+        for (Map<String, Object> message : messages) {
+            String email = (String) message.get("email");
+            Object pubDateObj = message.get("pub_date");
+            long pubDate = pubDateObj instanceof Number ? ((Number) pubDateObj).longValue() : 0;
+
+            message.put("gravatar_url", gravatarUrl(email, 48));
+            message.put("formatted_date", formatDatetime(pubDate));
+        }
+    }
+
     public static void main(String[] args) throws Exception {
         Path dbPath = Paths.get(DB_FILE_PATH);
 
@@ -191,6 +203,8 @@ public class App {
                     "ORDER BY message.pub_date DESC LIMIT ?";
             List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
 
+            hydrateMessages(messages);
+
             Map<String, Object> model = new HashMap<>();
             model.put("messages", messages);
             model.put("endpoint", "user_timeline");
@@ -208,6 +222,8 @@ public class App {
                     "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
                     "ORDER BY message.pub_date DESC LIMIT ?";
             List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
+
+            hydrateMessages(messages);
 
             Map<String, Object> model = new HashMap<>();
             model.put("messages", messages);
@@ -312,7 +328,6 @@ public class App {
                 return;
             }
 
-
             // Make sql statement
             String sql = "DELETE FROM follower WHERE who_id = ? AND whom_id = ?";
             try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
@@ -323,32 +338,31 @@ public class App {
 
             context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
             context.redirect("/" + username);
-
         });
 
-        //Registers a new message for the user.
+        // Registers a new message for the user.
         app.post("/add_message", context -> {
-            if(context.sessionAttribute("user_id") == null) //Check if user is logged in
-            {       
-                context.status(401); //Sends a not authorized response 
-                return; 
+            if (context.sessionAttribute("user_id") == null) // Check if user is logged in
+            {
+                context.status(401); // Sends a not authorized response
+                return;
             }
-            //Get the text from form data 
-            String text = context.formParam("text"); 
+            // Get the text from form data
+            String text = context.formParam("text");
 
-            //Check if string exists through null check and by checking if string is empty
-            if(text != null && !text.isEmpty()) 
-            {   
-                Integer userId = context.sessionAttribute("user_id"); //Get User ID
-                long currentTime = System.currentTimeMillis() / 1000; //Get timestamp, convert from ms to seconds
+            // Check if string exists through null check and by checking if string is empty
+            if (text != null && !text.isEmpty()) {
+                Integer userId = context.sessionAttribute("user_id"); // Get User ID
+                long currentTime = System.currentTimeMillis() / 1000; // Get timestamp, convert from ms to seconds
 
-                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; //SQL code
-                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql); ) {
-                    //Statement specifices with columns of the message table to change, temporarily with placeholder values ? & 0 
-                    stmt.setInt(1, userId); //Fill authorId
-                    stmt.setString(2, text); //Fill text 
-                    stmt.setLong(3, currentTime); //Fill currentTime
-                    stmt.executeUpdate(); //Update the table with the new values
+                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; // SQL code
+                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql);) {
+                    // Statement specifices with columns of the message table to change, temporarily
+                    // with placeholder values ? & 0
+                    stmt.setInt(1, userId); // Fill authorId
+                    stmt.setString(2, text); // Fill text
+                    stmt.setLong(3, currentTime); // Fill currentTime
+                    stmt.executeUpdate(); // Update the table with the new values
                 }
             }
         });

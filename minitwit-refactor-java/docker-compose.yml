@@ -1,9 +1,11 @@
 services:
   app:
-    build: . #Build from Dockerfile
+    build: .
     ports:
       - "7070:7070"
+      - "5005:5005" # Open port for debugging
     volumes:
       - ./data:/app/data # Map project's data folder to container
     environment:
       - DB_FILE=data/minitwit-java.db
+      - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For attaching VSCode debugger

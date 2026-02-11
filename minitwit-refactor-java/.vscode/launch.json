@@ -1,0 +1,20 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Local: Launch App",
+      "request": "launch",
+      "mainClass": "zerodowntime.App",
+      "cwd": "${workspaceFolder}",
+      "projectName": "minitwit-refactor"
+    },
+    {
+      "type": "java",
+      "name": "Docker: Attach to Minitwit",
+      "request": "attach",
+      "hostName": "localhost",
+      "port": 5005
+    }
+  ]
+}

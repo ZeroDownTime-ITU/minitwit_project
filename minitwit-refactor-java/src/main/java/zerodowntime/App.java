@@ -24,6 +24,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import io.javalin.Javalin;
+import io.javalin.http.Context;
 import io.javalin.rendering.template.JavalinPebble;
 
 public class App {
@@ -50,7 +51,7 @@ public class App {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
         String sql = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-        try (Connection db = connectDb(); var stmt = db.createStatement()) { // Auto-close when done
+        try (Connection db = connectDb(); var stmt = db.createStatement()) {
             for (String command : sql.split(";")) {
                 if (!command.trim().isEmpty()) {
                     stmt.executeUpdate(command.trim());
@@ -147,6 +148,24 @@ public class App {
         }
     }
 
+    // Helper method to create base model with g.user and flashes
+    private static Map<String, Object> createModel(Context context) {
+        Map<String, Object> model = new HashMap<>();
+
+        // Add g.user (Flask-style)
+        Map<String, Object> g = new HashMap<>();
+        g.put("user", context.attribute("user"));
+        model.put("g", g);
+
+        // Add flashes
+        Object flashes = context.attribute("flashes");
+        if (flashes != null) {
+            model.put("flashes", flashes);
+        }
+
+        return model;
+    }
+
     public static void main(String[] args) throws Exception {
         Path dbPath = Paths.get(DB_FILE_PATH);
 
@@ -169,6 +188,7 @@ public class App {
 
         // Lookup the current user so that we know he's there
         app.before(context -> {
+            // Load user from session
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
                 Map<String, Object> user = queryDbOne(
@@ -177,6 +197,13 @@ public class App {
                 context.attribute("user", user);
             } else {
                 context.attribute("user", null);
+            }
+
+            // Load flashes from session and consume them
+            List<String> flashes = context.sessionAttribute("flashes");
+            if (flashes != null) {
+                context.attribute("flashes", flashes);
+                context.consumeSessionAttribute("flashes");
             }
         });
 
@@ -189,30 +216,24 @@ public class App {
             System.out.println("We got a visitor from: " + context.ip());
 
             Map<String, Object> user = context.attribute("user");
-
             if (user == null) {
                 context.redirect(ROUTE_PUBLIC);
                 return;
             }
-            int userId = (int) user.get("user_id");
 
+            int userId = (int) user.get("user_id");
             String sql = "SELECT message.*, user.* FROM message, user " +
                     "WHERE message.flagged = 0 AND message.author_id = user.user_id AND (" +
                     "user.user_id = ? OR " +
-                    "user.user_id IN (SELECT whom_id FROM follower " +
-                    "WHERE who_id = ?)) " +
+                    "user.user_id IN (SELECT whom_id FROM follower WHERE who_id = ?)) " +
                     "ORDER BY message.pub_date DESC LIMIT ?";
-            List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
 
+            List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
             hydrateMessages(messages);
 
-            Map<String, Object> model = new HashMap<>();
+            Map<String, Object> model = createModel(context);
             model.put("messages", messages);
             model.put("endpoint", "timeline");
-
-            Map<String, Object> g = new HashMap<>();
-            g.put("user", context.attribute("user"));
-            model.put("g", g);
 
             context.render("timeline.html", model);
         });
@@ -222,17 +243,13 @@ public class App {
             String sql = "SELECT message.*, user.* FROM message, user " +
                     "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
                     "ORDER BY message.pub_date DESC LIMIT ?";
-            List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
 
+            List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
             hydrateMessages(messages);
 
-            Map<String, Object> model = new HashMap<>();
+            Map<String, Object> model = createModel(context);
             model.put("messages", messages);
             model.put("endpoint", "public_timeline");
-
-            Map<String, Object> g = new HashMap<>();
-            g.put("user", context.attribute("user"));
-            model.put("g", g);
 
             context.render("timeline.html", model);
         });
@@ -243,7 +260,10 @@ public class App {
                 context.redirect(ROUTE_HOME);
                 return;
             }
-            context.render("login.html", Map.of("error", ""));
+
+            Map<String, Object> model = createModel(context);
+            model.put("error", "");
+            context.render("login.html", model);
         });
 
         // Post (submit) request for logging the user in.
@@ -272,7 +292,9 @@ public class App {
                 return;
             }
 
-            context.render("login.html", Map.of("error", error));
+            Map<String, Object> model = createModel(context);
+            model.put("error", error);
+            context.render("login.html", model);
         });
 
         // Get request for registing the user.
@@ -281,7 +303,10 @@ public class App {
                 context.redirect(ROUTE_HOME);
                 return;
             }
-            context.render("register.html", Map.of("error", ""));
+
+            Map<String, Object> model = createModel(context);
+            model.put("error", "");
+            context.render("register.html", model);
         });
 
         // Post (submit) request for registering the user.
@@ -318,16 +343,16 @@ public class App {
                 return;
             }
 
-            context.render("register.html", Map.of("error", error));
+            Map<String, Object> model = createModel(context);
+            model.put("error", error);
+            context.render("register.html", model);
         });
 
+        // Logout
         app.get("/logout", context -> {
             context.sessionAttribute("user_id", null);
-            context.sessionAttribute("flash", "You were logged out");
-            context.redirect("/public");
-
-            String flash = context.sessionAttribute("flash");
-            context.sessionAttribute(flash, null);
+            context.sessionAttribute("flashes", List.of("You were logged out"));
+            context.redirect(ROUTE_PUBLIC);
         });
 
         // Registers a new message for the user.
@@ -345,8 +370,8 @@ public class App {
                 Integer userId = context.sessionAttribute("user_id"); // Get User ID
                 long currentTime = System.currentTimeMillis() / 1000; // Get timestamp, convert from ms to seconds
 
-                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)"; // SQL code
-                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql);) {
+                String sql = "INSERT INTO message (author_id, text, pub_date, flagged) VALUES (?, ?, ?, 0)";
+                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
                     stmt.setInt(1, userId);
                     stmt.setString(2, text);
                     stmt.setLong(3, currentTime);
@@ -361,20 +386,17 @@ public class App {
         app.get("/{username}/follow", context -> {
             String username = context.pathParam("username");
 
-            // Is the user logged in?
             if (context.attribute("user") == null) {
                 context.status(401);
                 return;
             }
 
-            // Get the ID of the user we wish to follow.
             Integer whomId = getUserId(username);
             if (whomId == null) {
                 context.status(404);
                 return;
             }
 
-            // Make sql statement to add the whom ID to our current users follow value
             String sql = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)";
             try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
                 stmt.setObject(1, context.sessionAttribute("user_id"));
@@ -419,20 +441,14 @@ public class App {
             String sql = "SELECT message.*, user.* FROM message, user " +
                     "WHERE user.user_id = message.author_id AND user.user_id = ? " +
                     "ORDER BY message.pub_date DESC LIMIT ?";
-            List<Map<String, Object>> messages = queryDb(sql, profileUser.get("user_id"),
-                    PER_PAGE);
-
+            List<Map<String, Object>> messages = queryDb(sql, profileUser.get("user_id"), PER_PAGE);
             hydrateMessages(messages);
 
-            Map<String, Object> model = new HashMap<>();
+            Map<String, Object> model = createModel(context);
             model.put("messages", messages);
             model.put("followed", followed);
             model.put("profile_user", profileUser);
             model.put("endpoint", "user_timeline");
-
-            Map<String, Object> g = new HashMap<>();
-            g.put("user", currentUser);
-            model.put("g", g);
 
             context.render("timeline.html", model);
         });
@@ -453,7 +469,6 @@ public class App {
                 return;
             }
 
-            // Make sql statement
             String sql = "DELETE FROM follower WHERE who_id = ? AND whom_id = ?";
             try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
                 stmt.setObject(1, context.sessionAttribute("user_id"));
@@ -464,6 +479,5 @@ public class App {
             context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
             context.redirect("/" + username);
         });
-
     }
 }

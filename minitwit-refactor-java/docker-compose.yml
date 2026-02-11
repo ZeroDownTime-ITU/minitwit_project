@@ -1,0 +1,9 @@
+services:
+  app:
+    build: . #Build from Dockerfile
+    ports:
+      - "7070:7070"
+    volumes:
+      - ./data:/app/data # Map project's data folder to container
+    environment:
+      - DB_FILE=data/minitwit-java.db

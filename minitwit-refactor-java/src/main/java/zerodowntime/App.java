@@ -1,9 +1,18 @@
 package zerodowntime;
 
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -11,9 +20,6 @@ import java.util.Map;
 
 import org.mindrot.jbcrypt.BCrypt;
 
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.sql.Connection;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinPebble;
 
@@ -23,7 +29,7 @@ public class App {
     private static String path = App.class.getProtectionDomain().getCodeSource().getLocation().getPath();
     private static String projectDir = new java.io.File(path).getParentFile().getParentFile().getAbsolutePath();
     public static final String DATABASE = "jdbc:sqlite:" + projectDir + "/minitwit-java.db";
-    
+
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
     public static final String SECRET_KEY = "development key";
@@ -32,14 +38,9 @@ public class App {
     public static Connection connectDb() throws SQLException {
         return DriverManager.getConnection(DATABASE);
     }
-
-    public static Integer getUserId(String username) {
-        // Mathias code here. Dependency for Kasper 
-        return 23; // random user id I have put here for testing. 
-    }
     
     // Creates the database tables
-    public static void initDb() throws Exception{
+    public static void initDb() throws Exception {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
         String sql = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
@@ -49,14 +50,14 @@ public class App {
                     stmt.executeUpdate(command.trim());
                 }
             }
-        }    
+        }
     }
 
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> queryDb(String query, Object... args) {
         return (List<Map<String, Object>>) queryDbInternal(query, false, args);
     }
-    
+
     @SuppressWarnings("unchecked")
     public static Map<String, Object> queryDbOne(String query, Object... args) {
         return (Map<String, Object>) queryDbInternal(query, true, args);
@@ -81,16 +82,51 @@ public class App {
                 }
                 results.add(row);
             }
-        } 
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    
+
         // Returns first result if one == true, else return full list
         if (one) {
             return results.isEmpty() ? null : results.get(0);
         }
         return results;
+    }
+
+    //Convenience method to look up the id for a username.
+    public static Integer getUserId(String username) {
+        Map<String, Object> rv = queryDbOne("SELECT user_id FROM user WHERE username = ?", username);
+        if (rv != null) {
+            return (Integer) rv.get("user_id");
+        } else {
+            return null;
+        }
+    }
+
+    //Format a timestamp for display.
+    public static String formatDatetime(long timestamp) {
+        Instant instant = Instant.ofEpochSecond(timestamp);
+        ZonedDateTime dt = instant.atZone(ZoneOffset.UTC);
+        return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
+    }
+
+    //Return the gravatar image for the given email address
+    public static String gravatarUrl(String email, Integer size) {
+        if (size == null) {
+            size = 80;
+        }
+
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] hash = md.digest(email.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
+            StringBuilder hex = new StringBuilder();
+            for (byte b : hash) {
+                hex.append(String.format("%02x", b));
+            }
+            return "http://www.gravatar.com/avatar/" + hex + "?d=identicon&s=" + size;
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     public static void main(String[] args) throws Exception {
@@ -120,7 +156,6 @@ public class App {
         });
         
         // ---------------- Routes/endpoints below ----------------
-        
         // Redirect to timeline if empty route
         app.get("/", context -> {
             context.redirect("/timeline");

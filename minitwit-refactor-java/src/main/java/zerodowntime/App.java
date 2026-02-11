@@ -13,6 +13,9 @@ import org.mindrot.jbcrypt.BCrypt;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import io.javalin.Javalin;
 import io.javalin.rendering.template.JavalinPebble;
@@ -20,10 +23,9 @@ import io.javalin.rendering.template.JavalinPebble;
 public class App {
 
     // Configuration
-    private static String path = App.class.getProtectionDomain().getCodeSource().getLocation().getPath();
-    private static String projectDir = new java.io.File(path).getParentFile().getParentFile().getAbsolutePath();
-    public static final String DATABASE = "jdbc:sqlite:minitwit-java.db"; //changed to relative path from absolute path //YA
-    
+    private static final String DB_FILE_PATH = "data/minitwit-java.db";
+    public static final String DATABASE = "jdbc:sqlite:" + DB_FILE_PATH;
+
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
     public static final String SECRET_KEY = "development key";
@@ -39,24 +41,24 @@ public class App {
     }
     
     // Creates the database tables
-    public static void initDb() throws Exception{
+    public static void initDb() throws Exception {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
         String sql = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
 
-        try (Connection db = connectDb(); var stmt = db.createStatement()) { //Auto-close when done
+        try (Connection db = connectDb(); Statement stmt = db.createStatement()) { // Auto-close when done
             for (String command : sql.split(";")) {
                 if (!command.trim().isEmpty()) {
                     stmt.executeUpdate(command.trim());
                 }
             }
-        }    
+        }
     }
 
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> queryDb(String query, Object... args) {
         return (List<Map<String, Object>>) queryDbInternal(query, false, args);
     }
-    
+
     @SuppressWarnings("unchecked")
     public static Map<String, Object> queryDbOne(String query, Object... args) {
         return (Map<String, Object>) queryDbInternal(query, true, args);
@@ -64,16 +66,16 @@ public class App {
 
     // Queries the database and returns a list of dictionaries
     private static Object queryDbInternal(String query, boolean one, Object... args) {
-        List<Map<String, Object>> results = new ArrayList<>();
-    
-        try (Connection db = connectDb(); var stmt = db.prepareStatement(query)) {
+        var results = new ArrayList<Map<String, Object>>();
+
+        try (var db = connectDb(); var stmt = db.prepareStatement(query)) {
             for (int i = 0; i < args.length; i++) {
                 stmt.setObject(i + 1, args[i]);
             }
-        
-            ResultSet rs = stmt.executeQuery();
-            ResultSetMetaData meta = rs.getMetaData();
-            
+
+            var rs = stmt.executeQuery();
+            var meta = rs.getMetaData();
+
             while (rs.next()) {
                 Map<String, Object> row = new HashMap<>();
                 for (int i = 1; i <= meta.getColumnCount(); i++) {
@@ -81,11 +83,10 @@ public class App {
                 }
                 results.add(row);
             }
-        } 
-        catch (SQLException e) {
+        } catch (SQLException e) {
             throw new RuntimeException(e);
         }
-    
+
         // Returns first result if one == true, else return full list
         if (one) {
             return results.isEmpty() ? null : results.get(0);
@@ -94,21 +95,35 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
-        if (args.length > 0 && args[0].equals("init")) {
-            initDb();
-            System.out.println("Database initialized. Exiting.");
-            System.out.println("DATABASE URL: " + DATABASE);
+        // if (args.length > 0 && args[0].equals("init")) {
+        // initDb();
+        // System.out.println("Database initialized. Exiting.");
+        // System.out.println("DATABASE URL: " + DATABASE);
 
-            return;
+        // return;
+        // }
+        Path dbPath = Paths.get(DB_FILE_PATH);
+
+        if (Files.exists(dbPath)) {
+            System.out.println("Database already exists at: " + DB_FILE_PATH);
+        } else {
+            System.out.println("Database not found. Initializing...");
+            System.out.println("Creating database at: " + DB_FILE_PATH);
+            initDb();
+            System.out.println("Database initialized successfully.");
         }
 
         Javalin app = Javalin.create(config -> {
             config.staticFiles.add("/static");
             config.fileRenderer(new JavalinPebble());
         }).start(7070); // Port 7070
-        
-        // Look up the current user so that we know he's there
-        app.before(context -> {            
+
+        // Make sure we are connected to the database each request and look
+        // -up the current user so that we know he's there
+        app.before(context -> {
+            Connection db = connectDb();
+            context.attribute("db", db);
+
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
                 Map<String, Object> user = queryDbOne(
@@ -120,21 +135,31 @@ public class App {
                 context.attribute("user", null);
             }
         });
-        
+
+        // Closes the database again at the end of the request.
+        app.after(context -> {
+            Connection db = context.attribute("db");
+            if (db != null) {
+                db.close();
+            }
+        });
+
         // ---------------- Routes/endpoints below ----------------
-        
+
         // Redirect to timeline if empty route
         app.get("/", context -> {
             context.redirect("/timeline");
         });
 
         // Shows a users timeline or if no user is logged in it will
-        // redirect to the public timeline.  This timeline shows the user's
+        // redirect to the public timeline. This timeline shows the user's
         // messages as well as all the messages of followed users.
         app.get("/timeline", context -> {
             System.out.println("We got a visitor from: " + context.ip());
 
-            Map<String, Object> user = context.attribute("user"); 
+            Connection db = context.attribute("db");
+            Map<String, Object> user = context.attribute("user");
+
             if (user == null) {
                 context.redirect("/public");
                 return;
@@ -363,10 +388,11 @@ public class App {
             } else if (queryDbOne("SELECT user_id FROM user WHERE username = ?", username) != null) {
                 error = "The username is already taken";
             } else {
-                String pwHash = BCrypt.hashpw(password, BCrypt.gensalt()); // Hash the password
-                
-                String sql = "INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)";
-                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
+                // Hash the password
+                String pwHash = BCrypt.hashpw(password, BCrypt.gensalt());
+
+                try (Connection db = connectDb()) {
+                    var stmt = db.prepareStatement("INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)");
                     stmt.setString(1, username);
                     stmt.setString(2, email);
                     stmt.setString(3, pwHash);
@@ -381,7 +407,7 @@ public class App {
             context.render("register.html", Map.of("error", error));
         });
 
-        app.get("/logout", context ->{
+        app.get("/logout", context -> {
             context.sessionAttribute("flash", "You were logged out");
             context.sessionAttribute("user_id", null);
             context.redirect("/public");

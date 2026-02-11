@@ -1,8 +1,8 @@
 services:
   app:
-    build: 
+    build:
       context: .
-      target: build  # This ensures you have Maven inside the container
+      target: build
     ports:
       - "7070:7070"
     volumes:
@@ -10,3 +10,6 @@ services:
       - db-data:/data
     environment:
       - DB_FILE=/data/minitwit-java.db
+
+volumes:
+  db-data:

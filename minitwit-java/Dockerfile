@@ -21,7 +21,7 @@ FROM eclipse-temurin:21-jre
 WORKDIR /app
 
 # We use the reference to the build stage above and copy from the dir the compiled code  
-COPY --from=build /app/target/minitwit-refactor-*.jar /app/app.jar
+COPY --from=build /app/target/minitwit-java-*.jar /app/app.jar
 
 EXPOSE 7070
 

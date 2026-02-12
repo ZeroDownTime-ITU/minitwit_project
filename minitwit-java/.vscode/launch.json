@@ -7,7 +7,7 @@
       "request": "launch",
       "mainClass": "zerodowntime.App",
       "cwd": "${workspaceFolder}",
-      "projectName": "minitwit-refactor"
+      "projectName": "minitwit-java"
     },
     {
       "type": "java",

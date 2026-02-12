@@ -5,10 +5,10 @@
   <modelVersion>4.0.0</modelVersion>
 
   <groupId>zerodowntime</groupId>
-  <artifactId>minitwit-refactor</artifactId>
+  <artifactId>minitwit-java</artifactId>
   <version>0.0.1</version>
 
-  <name>minitwit-refactor</name>
+  <name>minitwit-java</name>
   <url>http://www.example.com</url>
 
   <properties>
@@ -51,6 +51,19 @@
       <artifactId>sqlite-jdbc</artifactId>
       <version>3.51.1.0</version>
       <scope>compile</scope>
+    </dependency>
+
+    <!-- JBDI drivers (JBDC SQL Wrapper) -->
+    <dependency>
+      <groupId>org.jdbi</groupId>
+      <artifactId>jdbi3-core</artifactId>
+      <version>3.45.1</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jdbi</groupId>
+      <artifactId>jdbi3-sqlobject</artifactId>
+      <version>3.45.1</version>
     </dependency>
 
     <!-- Bcrypt for password hashing -->

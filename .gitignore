@@ -26,3 +26,8 @@ dependency-reduced-pom.xml
 
 # Temp files
 *.lst
+
+# Vagrant
+.vagrant/
+*.box
+vagrant.log

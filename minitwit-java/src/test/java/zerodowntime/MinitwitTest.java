@@ -32,10 +32,12 @@ public class MinitwitTest {
         HashMap<String, List<Cookie>> cookies = new HashMap<>();
         client = new OkHttpClient.Builder()
                 .cookieJar(new CookieJar() {
+                    @Override
                     public void saveFromResponse(HttpUrl u, List<Cookie> c) {
                         cookies.put(u.host(), c);
                     }
 
+                    @Override
                     public List<Cookie> loadForRequest(HttpUrl u) {
                         return cookies.getOrDefault(u.host(), new ArrayList<>());
                     }

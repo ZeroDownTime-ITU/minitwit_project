@@ -39,7 +39,7 @@ public class TimelineController extends BaseController {
 
     // Displays the latest messages of all users.
     public void showPublicTimeline(Context ctx) {
-        List<MessageView> messages = timelineService.getPublicTimeline(App.PER_PAGE);
+        List<MessageView> messages = timelineService.getPublicTimeline(AppConstants.PER_PAGE);
 
         Map<String, Object> model = createModel(ctx);
         model.put("messages", messages);

@@ -40,11 +40,11 @@
   <ul class="messages">
   {% for message in messages %}
     <li>
-      <img src="{{ message.gravatar_url }}">
+      <img src="{{ message.gravatarUrl }}">
       <p>
         <strong><a href="/{{ message.username }}">{{ message.username }}</a></strong>
         {{ message.text }}
-        <small>&mdash; {{ message.formatted_date }}</small>
+        <small>&mdash; {{ message.pubDate }}</small>
       </p>
     </li>
   {% else %}

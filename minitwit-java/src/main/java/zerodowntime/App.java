@@ -18,7 +18,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.mindrot.jbcrypt.BCrypt;
+import org.jdbi.v3.core.Jdbi;
+import org.jdbi.v3.sqlobject.SqlObjectPlugin;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -26,26 +27,36 @@ import java.nio.file.Paths;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
 import io.javalin.rendering.template.JavalinPebble;
+import zerodowntime.constants.AppConstants.Web;
+import zerodowntime.controller.AuthController;
+import zerodowntime.controller.TimelineController;
+import zerodowntime.repository.MessageRepository;
+import zerodowntime.repository.UserRepository;
+import zerodowntime.service.AuthService;
+import zerodowntime.service.TimelineService;
 
 public class App {
 
     // Configuration
     private static final String DEFAULT_DB_PATH = "data/minitwit-java.db";
     public static String database = "jdbc:sqlite:" + DEFAULT_DB_PATH;
+    public static final Jdbi jdbi = Jdbi.create(database).installPlugin(new SqlObjectPlugin());
 
+    @Deprecated // in appconstants now
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
     public static final String SECRET_KEY = "development key";
 
+    @Deprecated
     private static final String ROUTE_HOME = "/";
-    private static final String ROUTE_PUBLIC = "/public";
-    private static final String ROUTE_LOGIN = "/login";
 
+    @Deprecated
     // Returns a new connection to the database
     public static Connection connectDb() throws SQLException {
         return DriverManager.getConnection(database);
     }
 
+    @Deprecated
     // Creates the database tables
     public static void initDb() throws Exception {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
@@ -60,16 +71,19 @@ public class App {
         }
     }
 
+    @Deprecated
     @SuppressWarnings("unchecked")
     public static List<Map<String, Object>> queryDb(String query, Object... args) {
         return (List<Map<String, Object>>) queryDbInternal(query, false, args);
     }
 
+    @Deprecated
     @SuppressWarnings("unchecked")
     public static Map<String, Object> queryDbOne(String query, Object... args) {
         return (Map<String, Object>) queryDbInternal(query, true, args);
     }
 
+    @Deprecated
     // Queries the database and returns a list of dictionaries
     private static Object queryDbInternal(String query, boolean one, Object... args) {
         List<Map<String, Object>> results = new ArrayList<>();
@@ -110,6 +124,7 @@ public class App {
         }
     }
 
+    @Deprecated // in utils now
     // Format a timestamp for display.
     public static String formatDatetime(long timestamp) {
         Instant instant = Instant.ofEpochSecond(timestamp);
@@ -117,6 +132,7 @@ public class App {
         return dt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
     }
 
+    @Deprecated // new one in utils
     // Return the gravatar image for the given email address
     public static String gravatarUrl(String email, Integer size) {
         if (size == null) {
@@ -191,15 +207,32 @@ public class App {
             config.fileRenderer(new JavalinPebble());
         });
 
+        // Create repositories
+        UserRepository userRepo = jdbi.onDemand(UserRepository.class);
+        MessageRepository messageRepo = jdbi.onDemand(MessageRepository.class);
+        // FollowerRepository followerRepo = jdbi.onDemand(FollowerRepository.class);
+
+        // Create services
+        AuthService authService = new AuthService(userRepo);
+        TimelineService timelineService = new TimelineService(messageRepo); // needs user repo later
+        // UserService userService = new UserService(userRepo, followerRepo);
+        // MessageService messageService = new MessageService(messageRepo);
+
+        // Create controllers
+        AuthController authController = new AuthController(authService);
+        TimelineController timelineController = new TimelineController(timelineService);
+        // UserController userController = new UserController(userService);
+        // SimulatorController simController = new SimulatorController(
+        // authService, messageService, userService);
+
         // Lookup the current user so that we know he's there
         app.before(context -> {
             // Load user from session
             Integer userId = context.sessionAttribute("user_id");
             if (userId != null) {
-                Map<String, Object> user = queryDbOne(
-                        "SELECT * FROM user WHERE user_id = ?",
-                        userId);
-                context.attribute("user", user);
+                userRepo.findById(userId).ifPresent(user -> {
+                    context.attribute("user", user);
+                });
             } else {
                 context.attribute("user", null);
             }
@@ -212,153 +245,21 @@ public class App {
             }
         });
 
-        // ---------------- Routes/endpoints below ----------------
+        // ============ WEB APP ROUTES ============
 
-        // Shows a users timeline or if no user is logged in it will
-        // redirect to the public timeline. This shows the user's
-        // messages as well as all the messages of followed users.
-        app.get(ROUTE_HOME, context -> {
-            System.out.println("We got a visitor from: " + context.ip());
+        // Auth routes
+        app.get(Web.LOGIN, authController::showLogin);
+        app.post(Web.LOGIN, authController::handleLogin);
+        app.get(Web.REGISTER, authController::showRegister);
+        app.post(Web.REGISTER, authController::handleRegister);
+        app.get(Web.LOGOUT, authController::handleLogout);
 
-            Map<String, Object> user = context.attribute("user");
-            if (user == null) {
-                context.redirect(ROUTE_PUBLIC);
-                return;
-            }
+        // Timeline routes
+        app.get(Web.HOME, timelineController::showUserTimeline);
+        app.get(Web.PUBLIC, timelineController::showPublicTimeline);
 
-            int userId = (int) user.get("user_id");
-            String sql = "SELECT message.*, user.* FROM message, user " +
-                    "WHERE message.flagged = 0 AND message.author_id = user.user_id AND (" +
-                    "user.user_id = ? OR " +
-                    "user.user_id IN (SELECT whom_id FROM follower WHERE who_id = ?)) " +
-                    "ORDER BY message.pub_date DESC LIMIT ?";
-
-            List<Map<String, Object>> messages = queryDb(sql, userId, userId, PER_PAGE);
-            hydrateMessages(messages);
-
-            Map<String, Object> model = createModel(context);
-            model.put("messages", messages);
-            model.put("endpoint", "timeline");
-
-            context.render("timeline.html", model);
-        });
-
-        // Displays the latest messages of all users.
-        app.get(ROUTE_PUBLIC, context -> {
-            String sql = "SELECT message.*, user.* FROM message, user " +
-                    "WHERE message.flagged = 0 AND message.author_id = user.user_id " +
-                    "ORDER BY message.pub_date DESC LIMIT ?";
-
-            List<Map<String, Object>> messages = queryDb(sql, PER_PAGE);
-            hydrateMessages(messages);
-
-            Map<String, Object> model = createModel(context);
-            model.put("messages", messages);
-            model.put("endpoint", "public_timeline");
-
-            context.render("timeline.html", model);
-        });
-
-        // Get request for logging the user in.
-        app.get(ROUTE_LOGIN, context -> {
-            if (context.attribute("user") != null) {
-                context.redirect(ROUTE_HOME);
-                return;
-            }
-
-            Map<String, Object> model = createModel(context);
-            model.put("error", "");
-            context.render("login.html", model);
-        });
-
-        // Post (submit) request for logging the user in.
-        app.post(ROUTE_LOGIN, context -> {
-            if (context.attribute("user") != null) {
-                context.redirect(ROUTE_HOME);
-                return;
-            }
-
-            String username = context.formParam("username");
-            String password = context.formParam("password");
-            String error = null;
-
-            Map<String, Object> user = queryDbOne(
-                    "SELECT * FROM user WHERE username = ?",
-                    username);
-
-            if (user == null) {
-                error = "Invalid username";
-            } else if (!BCrypt.checkpw(password, (String) user.get("pw_hash"))) {
-                error = "Invalid password";
-            } else {
-                context.sessionAttribute("flashes", List.of("You were logged in"));
-                context.sessionAttribute("user_id", user.get("user_id"));
-                context.redirect(ROUTE_HOME);
-                return;
-            }
-
-            Map<String, Object> model = createModel(context);
-            model.put("error", error);
-            context.render("login.html", model);
-        });
-
-        // Get request for registing the user.
-        app.get("/register", context -> {
-            if (context.attribute("user") != null) {
-                context.redirect(ROUTE_HOME);
-                return;
-            }
-
-            Map<String, Object> model = createModel(context);
-            model.put("error", "");
-            context.render("register.html", model);
-        });
-
-        // Post (submit) request for registering the user.
-        app.post("/register", context -> {
-            String username = context.formParam("username");
-            String email = context.formParam("email");
-            String password = context.formParam("password");
-            String passwordConfirm = context.formParam("password2");
-            String error = null;
-
-            if (username == null || username.isBlank()) {
-                error = "You have to enter a username";
-            } else if (email == null || !email.contains("@")) {
-                error = "You have to enter a valid email address";
-            } else if (password == null || password.isBlank()) {
-                error = "You have to enter a password";
-            } else if (!password.equals(passwordConfirm)) {
-                error = "The two passwords do not match";
-            } else if (queryDbOne("SELECT user_id FROM user WHERE username = ?", username) != null) {
-                error = "The username is already taken";
-            } else {
-                String pwHash = BCrypt.hashpw(password, BCrypt.gensalt()); // Hash the password
-
-                String sql = "INSERT INTO user (username, email, pw_hash) VALUES (?, ?, ?)";
-                try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
-                    stmt.setString(1, username);
-                    stmt.setString(2, email);
-                    stmt.setString(3, pwHash);
-                    stmt.executeUpdate();
-                }
-
-                context.sessionAttribute("flashes", List.of("You were successfully registered and can login now"));
-                context.redirect(ROUTE_LOGIN);
-                return;
-            }
-
-            Map<String, Object> model = createModel(context);
-            model.put("error", error);
-            context.render("register.html", model);
-        });
-
-        // Logout
-        app.get("/logout", context -> {
-            context.sessionAttribute("user_id", null);
-            context.sessionAttribute("flashes", List.of("You were logged out"));
-            context.redirect(ROUTE_PUBLIC);
-        });
+        // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE
+        // ============
 
         // Registers a new message for the user.
         app.post("/add_message", context -> {

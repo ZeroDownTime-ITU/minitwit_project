@@ -30,8 +30,8 @@ import io.javalin.rendering.template.JavalinPebble;
 public class App {
 
     // Configuration
-    private static final String DB_FILE_PATH = "data/minitwit-java.db";
-    public static final String DATABASE = "jdbc:sqlite:" + DB_FILE_PATH;
+    private static final String DEFAULT_DB_PATH = "data/minitwit-java.db";
+    public static String database = "jdbc:sqlite:" + DEFAULT_DB_PATH;
 
     public static final int PER_PAGE = 30;
     public static final boolean DEBUG = true;
@@ -43,7 +43,7 @@ public class App {
 
     // Returns a new connection to the database
     public static Connection connectDb() throws SQLException {
-        return DriverManager.getConnection(DATABASE);
+        return DriverManager.getConnection(database);
     }
 
     // Creates the database tables
@@ -167,24 +167,29 @@ public class App {
     }
 
     public static void main(String[] args) throws Exception {
-        Path dbPath = Paths.get(DB_FILE_PATH);
+        Path dbPath = Paths.get(DEFAULT_DB_PATH);
 
         if (Files.exists(dbPath)) {
-            System.out.println("Database already exists at: " + DB_FILE_PATH);
+            System.out.println("Database already exists at: " + DEFAULT_DB_PATH);
         } else {
+            Files.createDirectories(dbPath.getParent());
+
             System.out.println("Database not found. Initializing...");
-            System.out.println("Creating database at: " + DB_FILE_PATH);
             initDb();
             System.out.println("Database initialized successfully.");
         }
 
+        createApp().start(7070); // Start server
+    }
+
+    public static Javalin createApp() {
         Javalin app = Javalin.create(config -> {
             config.staticFiles.add(staticFiles -> {
                 staticFiles.hostedPath = "/static";
                 staticFiles.directory = "/static";
             });
             config.fileRenderer(new JavalinPebble());
-        }).start(7070); // Port 7070
+        });
 
         // Lookup the current user so that we know he's there
         app.before(context -> {
@@ -479,5 +484,7 @@ public class App {
             context.sessionAttribute("flashes", List.of("You are no longer following \"" + username + "\""));
             context.redirect("/" + username);
         });
+
+        return app;
     }
 }

@@ -26,7 +26,10 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import io.javalin.Javalin;
 import io.javalin.http.Context;
+import io.javalin.openapi.plugin.OpenApiPlugin;
+import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.rendering.template.JavalinPebble;
+import zerodowntime.constants.AppConstants.Api;
 import zerodowntime.constants.AppConstants.Web;
 import zerodowntime.controller.AuthController;
 import zerodowntime.controller.TimelineController;
@@ -34,6 +37,7 @@ import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.TimelineService;
+import zerodowntime.simulator.SimulatorController;
 
 public class App {
 
@@ -204,7 +208,23 @@ public class App {
                 staticFiles.hostedPath = "/static";
                 staticFiles.directory = "/static";
             });
-            config.fileRenderer(new JavalinPebble());
+            config.fileRenderer(new JavalinPebble()); // Use Pebble for rendering HTML templates
+
+            // 1. Configure OpenAPI (The generation)
+            config.registerPlugin(new OpenApiPlugin(openApiConfig -> {
+                openApiConfig.withDefinitionConfiguration((version, definition) -> {
+                    definition.withInfo(info -> {
+                        info.setTitle("MiniTwit API");
+                        info.setVersion("1.0.0");
+                    });
+                });
+            }));
+
+            // 2. Configure Swagger (The UI)
+            config.registerPlugin(new SwaggerPlugin(swaggerConfig -> {
+                swaggerConfig.setUiPath("/swagger");
+                swaggerConfig.setDocumentationPath("/openapi");
+            }));
         });
 
         // Create repositories
@@ -222,7 +242,7 @@ public class App {
         AuthController authController = new AuthController(authService);
         TimelineController timelineController = new TimelineController(timelineService);
         // UserController userController = new UserController(userService);
-        // SimulatorController simController = new SimulatorController(
+        SimulatorController simController = new SimulatorController(authService);
         // authService, messageService, userService);
 
         // Lookup the current user so that we know he's there
@@ -257,6 +277,10 @@ public class App {
         // Timeline routes
         app.get(Web.HOME, timelineController::showUserTimeline);
         app.get(Web.PUBLIC, timelineController::showPublicTimeline);
+
+        // ============ SIMULATOR API ROUTES ============
+        app.post(Api.REGISTER, simController::register);
+        app.get(Api.LATEST, simController::latest);
 
         // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE
         // ============

@@ -31,13 +31,13 @@ import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.rendering.template.JavalinPebble;
 import zerodowntime.constants.AppConstants.Api;
 import zerodowntime.constants.AppConstants.Web;
-import zerodowntime.controller.AuthController;
-import zerodowntime.controller.TimelineController;
+import zerodowntime.controller.simulator.SimulatorController;
+import zerodowntime.controller.web.AuthController;
+import zerodowntime.controller.web.TimelineController;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.TimelineService;
-import zerodowntime.simulator.SimulatorController;
 
 public class App {
 
@@ -214,7 +214,7 @@ public class App {
             config.registerPlugin(new OpenApiPlugin(openApiConfig -> {
                 openApiConfig.withDefinitionConfiguration((version, definition) -> {
                     definition.withInfo(info -> {
-                        info.setTitle("MiniTwit API");
+                        info.setTitle("Minitwit API");
                         info.setVersion("1.0.0");
                     });
                 });
@@ -278,9 +278,13 @@ public class App {
         app.get(Web.HOME, timelineController::showUserTimeline);
         app.get(Web.PUBLIC, timelineController::showPublicTimeline);
 
+        // User routes
+
         // ============ SIMULATOR API ROUTES ============
+
         app.post(Api.REGISTER, simController::register);
         app.get(Api.LATEST, simController::latest);
+        app.post(Api.MSGS_USER, simController::post);
 
         // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE
         // ============

@@ -1,4 +1,4 @@
-package zerodowntime.controller;
+package zerodowntime.controller.web;
 
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,7 @@ public class AuthController extends BaseController {
         String password = ctx.formParam("password");
 
         try {
-            User user = authService.login(username, password);
+            User user = authService.loginUser(username, password);
 
             ctx.sessionAttribute("flashes", List.of("You were logged in"));
             ctx.sessionAttribute("user_id", user.getUserId());
@@ -59,7 +59,7 @@ public class AuthController extends BaseController {
                 throw new IllegalArgumentException("The two passwords do not match");
             }
 
-            authService.register(username, email, password);
+            authService.registerUser(username, email, password);
 
             ctx.sessionAttribute("flashes", List.of("You were successfully registered"));
             ctx.redirect("/login");

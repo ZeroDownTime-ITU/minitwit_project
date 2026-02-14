@@ -1,4 +1,4 @@
-package zerodowntime.controller;
+package zerodowntime.controller.web;
 
 import io.javalin.http.Context;
 import java.util.HashMap;

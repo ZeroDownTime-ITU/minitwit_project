@@ -1,10 +1,9 @@
-package zerodowntime.controller;
+package zerodowntime.controller.web;
 
 import java.util.List;
 import java.util.Map;
 
 import io.javalin.http.Context;
-import zerodowntime.App;
 import zerodowntime.constants.AppConstants;
 import zerodowntime.constants.AppConstants.Web;
 import zerodowntime.dto.MessageView;
@@ -34,6 +33,8 @@ public class TimelineController extends BaseController {
 
         Map<String, Object> model = createModel(ctx);
         model.put("messages", messages);
+        model.put("endpoint", "timeline");
+
         ctx.render("timeline.html", model);
     }
 

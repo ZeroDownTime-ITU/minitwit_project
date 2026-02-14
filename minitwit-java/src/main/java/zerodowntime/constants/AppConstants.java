@@ -20,10 +20,10 @@ public class AppConstants {
 
     // Simulator/API Routes
     public static class Api {
-        public static final String LATEST = "/latest";
-        public static final String REGISTER = "/register"; // Or "/api/register" if you prefix
-        public static final String MSGS = "/msgs";
-        public static final String MSGS_USER = "/msgs/{username}";
-        public static final String FLLWS_USER = "/fllws/{username}";
+        public static final String LATEST = "/api/latest";
+        public static final String REGISTER = "/api/register";
+        public static final String MSGS = "/api/msgs";
+        public static final String MSGS_USER = "/api/msgs/{username}";
+        public static final String FLLWS_USER = "/api/fllws/{username}";
     }
 }

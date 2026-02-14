@@ -34,12 +34,6 @@ public class AuthService {
         return userRepository.findByUsername(username).orElse(null);
     }
 
-    public Integer getUserIdByUsername(String username) {
-        return userRepository.findByUsername(username)
-                .map(User::getUserId)
-                .orElse(null);
-    }
-
     private boolean validateUsername(String username) {
         if (username == null || username.isBlank()) {
             throw new IllegalArgumentException("You have to enter a username");

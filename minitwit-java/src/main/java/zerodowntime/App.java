@@ -34,10 +34,14 @@ import zerodowntime.constants.AppConstants.Web;
 import zerodowntime.controller.simulator.SimulatorController;
 import zerodowntime.controller.web.AuthController;
 import zerodowntime.controller.web.TimelineController;
+import zerodowntime.controller.web.UserController;
+import zerodowntime.model.User;
+import zerodowntime.repository.FollowerRepository;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.TimelineService;
+import zerodowntime.service.UserService;
 
 public class App {
 
@@ -60,7 +64,6 @@ public class App {
         return DriverManager.getConnection(database);
     }
 
-    @Deprecated
     // Creates the database tables
     public static void initDb() throws Exception {
         InputStream inputStream = App.class.getResourceAsStream("/schema.sql");
@@ -230,20 +233,19 @@ public class App {
         // Create repositories
         UserRepository userRepo = jdbi.onDemand(UserRepository.class);
         MessageRepository messageRepo = jdbi.onDemand(MessageRepository.class);
-        // FollowerRepository followerRepo = jdbi.onDemand(FollowerRepository.class);
+        FollowerRepository followerRepo = jdbi.onDemand(FollowerRepository.class);
 
         // Create services
         AuthService authService = new AuthService(userRepo);
         TimelineService timelineService = new TimelineService(messageRepo); // needs user repo later
-        // UserService userService = new UserService(userRepo, followerRepo);
+        UserService userService = new UserService(userRepo, followerRepo);
         // MessageService messageService = new MessageService(messageRepo);
 
         // Create controllers
         AuthController authController = new AuthController(authService);
         TimelineController timelineController = new TimelineController(timelineService);
-        // UserController userController = new UserController(userService);
-        SimulatorController simController = new SimulatorController(authService);
-        // authService, messageService, userService);
+        UserController userController = new UserController(userService);
+        SimulatorController simController = new SimulatorController(authService, userService);
 
         // Lookup the current user so that we know he's there
         app.before(context -> {
@@ -279,15 +281,20 @@ public class App {
         app.get(Web.PUBLIC, timelineController::showPublicTimeline);
 
         // User routes
+        // app.get(Web.USER_PROFILE, userController::showUserProfile);
+        app.get(Web.FOLLOW, userController::handleFollow);
+        //app.get(Web.UNFOLLOW, userController::handleUnfollow);
+
 
         // ============ SIMULATOR API ROUTES ============
 
-        app.post(Api.REGISTER, simController::register);
-        app.get(Api.LATEST, simController::latest);
-        app.post(Api.MSGS_USER, simController::post);
+        app.post(Api.REGISTER, simController::postRegister);
+        app.get(Api.LATEST, simController::getLatest);
+        app.post(Api.MSGS_USER, simController::postMessage);
+        app.get(Api.FLLWS_USER, simController::getFollowers);
+        app.post(Api.FLLWS_USER, simController::postFollow);
 
-        // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE
-        // ============
+        // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE ============
 
         // Registers a new message for the user.
         app.post("/add_message", context -> {
@@ -316,32 +323,6 @@ public class App {
             context.redirect(ROUTE_HOME);
         });
 
-        // Adds the current user as follower of the given user.
-        app.get("/{username}/follow", context -> {
-            String username = context.pathParam("username");
-
-            if (context.attribute("user") == null) {
-                context.status(401);
-                return;
-            }
-
-            Integer whomId = getUserId(username);
-            if (whomId == null) {
-                context.status(404);
-                return;
-            }
-
-            String sql = "INSERT INTO follower (who_id, whom_id) VALUES (?, ?)";
-            try (Connection db = connectDb(); var stmt = db.prepareStatement(sql)) {
-                stmt.setObject(1, context.sessionAttribute("user_id"));
-                stmt.setObject(2, whomId);
-                stmt.executeUpdate();
-            }
-
-            context.sessionAttribute("flashes", List.of("You are now following \"" + username + "\""));
-            context.redirect("/" + username);
-        });
-
         // // Display's a user's tweets.
         app.get("/{username}", context -> {
             String username = context.pathParam("username");
@@ -358,10 +339,10 @@ public class App {
 
             // Check if current user is following this profile user
             boolean followed = false;
-            Map<String, Object> currentUser = context.attribute("user");
+            User currentUser = context.attribute("user");
 
             if (currentUser != null) {
-                Integer whoId = (Integer) currentUser.get("user_id");
+                Integer whoId = currentUser.getUserId();
                 Integer whomId = (Integer) profileUser.get("user_id");
 
                 Map<String, Object> followCheck = queryDbOne(

@@ -17,8 +17,7 @@ public class TimelineController extends BaseController {
         this.timelineService = timelineService;
     }
 
-    // Shows a users timeline or if no user is logged in it will
-    // redirect to the public timeline. This shows the user's
+    // Shows a users timeline or if no user is logged in it will redirect to the public timeline. This shows the user's
     // messages as well as all the messages of followed users.
     public void showUserTimeline(Context ctx) {
         System.out.println("We got a visitor from: " + ctx.ip());

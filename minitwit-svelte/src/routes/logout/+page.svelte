@@ -4,9 +4,9 @@
     import { user, flashes } from '$lib/stores';
 
     onMount(async () => {
-        const res = await fetch('/api/auth/logout', { method: 'POST' });
+        const response = await fetch('/api/auth/logout', { method: 'POST' });
 
-        if (res.ok) {
+        if (response.ok) {
             user.set(null);
             flashes.set(["You were logged out"]);
 
@@ -14,5 +14,3 @@
         }
     });
 </script>
-
-<p>Logging you out...</p>

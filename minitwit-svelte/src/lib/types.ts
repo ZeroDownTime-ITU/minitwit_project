@@ -1,7 +1,9 @@
 export interface Message {
     username: string;
-    content: string;
-    pub_date: string;
+    text: string;
+    pubDate: string;
+    gravatarUrl: string;
+    authorId: number;
 }
 
 export interface FollowsResponse {
@@ -11,5 +13,4 @@ export interface FollowsResponse {
 export interface UserProfileData {
     messages: Message[];
     followed: boolean;
-    // Add any other user fields you return from Java
 }

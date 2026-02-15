@@ -60,26 +60,3 @@
         <input type="submit" value={loading ? "Signing in..." : "Sign In"} disabled={loading}>
     </div>
 </form>
-<!-- {% extends "layout.html" %}
-{% block title %}Sign In{% endblock %}
-
-{% block body %}
-  <h2>Sign In</h2>
-  
-  {% if error is not empty %}
-    <div class="error"><strong>Error:</strong> {{ error }}</div>
-  {% endif %}
-  
-  <form action="/login" method="post">
-    <dl>
-      <dt>Username:
-      <dd><input type="text" name="username" size="30" value="{{ username }}">
-      
-      <dt>Password:
-      <dd><input type="password" name="password" size="30">
-    </dl>
-    <div class="actions">
-      <input type="submit" value="Sign In">
-    </div>
-  </form>
-{% endblock %} -->

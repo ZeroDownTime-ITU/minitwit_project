@@ -3,14 +3,12 @@
 	import MessageComponent from '$lib/components/Message.svelte';
 	import type { Message } from '$lib/types';
 
-	// State for our messages
 	let messages = $state<Message[]>([]);
-	let loading = $state(true);
 	let error = $state<string | null>(null);
 
 	async function fetchPublicTimeline() {
 		try {
-			const res = await fetch('/api/public');
+			const res = await fetch('/api/public-timeline');
 			if (res.ok) {
 				messages = await res.json();
 			} else {
@@ -18,8 +16,6 @@
 			}
 		} catch (e) {
 			error = "Could not connect to the server.";
-		} finally {
-			loading = false;
 		}
 	}
 
@@ -34,9 +30,7 @@
 
 <h2>Public Timeline</h2>
 
-{#if loading}
-	<p>Loading messages...</p>
-{:else if error}
+{#if error}
 	<p class="error">{error}</p>
 {:else}
 	<ul class="messages">

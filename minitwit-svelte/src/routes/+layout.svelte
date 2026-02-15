@@ -1,9 +1,16 @@
 <script lang="ts">
-	import '../app.css'; // Import your CSS here
-	import { user, flashes } from '$lib/stores'; // We'll define these in a second
+	import '../app.css';
+	import { user, flashes } from '$lib/stores';
+    import { beforeNavigate } from '$app/navigation';
 	
-	// Svelte 5 uses 'children' as a snippet for page content
 	let { children } = $props();
+
+	beforeNavigate((navigation) => {
+        // Only clear flashes if the user clicked a link ('link') or used the back/forward buttons.
+        if (navigation.type === 'link' || navigation.type === 'popstate') {
+            flashes.set([]);
+        }
+    });
 </script>
 
 <div class="page">
@@ -37,8 +44,3 @@
 		MiniTwit &mdash; A Svelte & Javalin Application
 	</div>
 </div>
-
-<style>
-    /* You can paste your existing style.css content here 
-       or keep it in app.css */
-</style>

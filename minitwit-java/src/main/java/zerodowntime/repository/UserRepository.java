@@ -10,11 +10,11 @@ import java.util.Optional;
 
 @RegisterBeanMapper(User.class)
 public interface UserRepository {
-    @SqlQuery("SELECT * FROM user WHERE username = :username")
-    Optional<User> findByUsername(@Bind("username") String username);
-
     @SqlQuery("SELECT * FROM user WHERE user_id = :userId")
     Optional<User> findById(@Bind("userId") Integer userId);
+
+    @SqlQuery("SELECT * FROM user WHERE username = :username")
+    Optional<User> findByUsername(@Bind("username") String username);
 
     @SqlUpdate("INSERT INTO user (username, email, pw_hash) VALUES (:username, :email, :pwHash)")
     void createUser(

@@ -6,7 +6,7 @@ public class AppConstants {
 
     /**
      * Simulator API: Strictly follows the Minitwit Simulator Specification.
-     * These usually require the 'Authorization' header and specific JSON formats.
+     * These use the 'Authorization' header.
      */
     public static class SimulatorApi {
         public static final String LATEST = "/api/latest";
@@ -17,17 +17,18 @@ public class AppConstants {
     }
 
     /**
-     * Frontend API: Endpoints for your Svelte frontend.
-     * These handle things like the public timeline, user profiles, and session
-     * checks.
+     * Frontend API: Endpoints for Svelte frontend.
+     * These use session-based authentication.
      */
     public static class PublicApi {
-        public static final String PUBLIC_TIMELINE = "/api/public";
-        public static final String USER_TIMELINE = "/api/user/{username}";
-        public static final String FOLLOW = "/{username}/follow";
-        public static final String UNFOLLOW = "/{username}/unfollow";
+        public static final String PUBLIC_TIMELINE = "/api/public-timeline";
+        public static final String USER_TIMELINE = "/api/user-timeline";
+        public static final String USER_PROFILE = "/api/user/{username}";
+        public static final String FOLLOW = "/api/follow/{username}";
+        public static final String UNFOLLOW = "/api/unfollow/{username}";
         public static final String USER_FOLLOWING = "/api/user/{username}/following";
-        // Authentication for Svelte (not the simulator)
+        public static final String POSTMESSAGE = "/api/add-message";
+
         public static final String LOGIN = "/api/auth/login";
         public static final String LOGOUT = "/api/auth/logout";
         public static final String REGISTER = "/api/auth/register";

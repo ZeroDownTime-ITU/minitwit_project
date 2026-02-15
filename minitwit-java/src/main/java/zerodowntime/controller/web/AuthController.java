@@ -1,30 +1,23 @@
 package zerodowntime.controller.web;
 
-import java.util.List;
 import java.util.Map;
 
 import io.javalin.http.Context;
-import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.RegisterRequest;
 import zerodowntime.dto.web.LoginRequest;
 import zerodowntime.dto.web.UserDto;
 import zerodowntime.model.User;
 import zerodowntime.service.AuthService;
+import zerodowntime.service.UserService;
 
 public class AuthController extends BaseController {
     AuthService authService;
+    UserService userService;
 
-    public AuthController(AuthService authService) {
+    public AuthController(AuthService authService, UserService userService) {
         this.authService = authService;
+        this.userService = userService;
     }
-
-    // public void showLogin(Context ctx) {
-    // if (ctx.attribute("user") != null) {
-    // ctx.redirect(PublicApi.HOME);
-    // return;
-    // }
-    // ctx.render("login.html", createModel(ctx));
-    // }
 
     public void handleLogin(Context ctx) {
         LoginRequest login = ctx.bodyAsClass(LoginRequest.class);
@@ -44,14 +37,6 @@ public class AuthController extends BaseController {
         }
     }
 
-    // public void showRegister(Context ctx) {
-    // if (ctx.attribute("user") != null) {
-    // ctx.redirect(PublicApi.USER_TIMELINE);
-    // return;
-    // }
-    // ctx.render("register.html", createModel(ctx));
-    // }
-
     public void handleRegister(Context ctx) {
         RegisterRequest register = ctx.bodyAsClass(RegisterRequest.class);
 
@@ -63,17 +48,33 @@ public class AuthController extends BaseController {
             authService.registerUser(register.username(), register.email(), register.password());
 
             ctx.status(200);
-            // ctx.sessionAttribute("flashes", List.of("You were successfully registered"));
-            // ctx.redirect("/login");
         } catch (IllegalArgumentException e) {
             ctx.status(401).json(Map.of("error", e.getMessage()));
         }
     }
 
+    public void getSession(Context ctx) {
+        Integer userId = ctx.sessionAttribute("user_id");
+
+        if (userId == null) {
+            ctx.status(401);
+            return;
+        }
+
+        User user = userService.getUserById(userId);
+        if (user == null) {
+            ctx.status(401);
+            return;
+        }
+
+        ctx.json(Map.of(
+                "userId", user.getUserId(),
+                "username", user.getUsername(),
+                "email", user.getEmail()));
+    }
+
     public void handleLogout(Context ctx) {
         ctx.sessionAttribute("user_id", null);
         ctx.status(200);
-        // ctx.sessionAttribute("flashes", List.of("You were logged out"));
-        // ctx.redirect(PublicApi.PUBLIC_TIMELINE);
     }
 }

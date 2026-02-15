@@ -2,41 +2,32 @@ package zerodowntime.service;
 
 import zerodowntime.dto.web.MessageDto;
 import zerodowntime.dto.web.MessageView;
+import zerodowntime.mapper.MessageMapper;
 import zerodowntime.repository.MessageRepository;
-import zerodowntime.util.FormatUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 public class TimelineService {
-    private final MessageRepository messageRepo;
+    private final MessageRepository messageRepository;
 
-    public TimelineService(MessageRepository messageRepo) {
-        this.messageRepo = messageRepo;
+    public TimelineService(MessageRepository messageRepository) {
+        this.messageRepository = messageRepository;
     }
 
     public List<MessageView> getTimelineForUser(int userId, int limit) {
-        List<MessageDto> rawMessages = messageRepo.getUserTimelineMessages(userId, limit);
+        List<MessageDto> rawMessages = messageRepository.getUserTimelineMessages(userId, limit);
 
         return rawMessages.stream()
-                .map(this::convertToView)
+                .map(MessageMapper::toView)
                 .collect(Collectors.toList());
     }
 
     public List<MessageView> getPublicTimeline(int limit) {
-        List<MessageDto> rawMessages = messageRepo.getPublicTimelineMessages(limit);
+        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessages(limit);
 
         return rawMessages.stream()
-                .map(this::convertToView)
+                .map(MessageMapper::toView)
                 .collect(Collectors.toList());
-    }
-
-    private MessageView convertToView(MessageDto dto) {
-        return new MessageView(
-                dto.getUsername(),
-                dto.getText(),
-                FormatUtils.formatDatetime(dto.getPubDate()),
-                FormatUtils.gravatarUrl(dto.getEmail(), 48),
-                dto.getAuthorId());
     }
 }

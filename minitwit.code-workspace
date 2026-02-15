@@ -1,0 +1,27 @@
+{
+  "folders": [
+    { "path": "minitwit-java" },
+    { "path": "minitwit-svelte" }
+  ],
+  "settings": {},
+  "launch": {
+    "version": "0.2.0",
+    "configurations": [
+      {
+        "type": "java",
+        "name": "Docker: Attach to Minitwit",
+        "request": "attach",
+        "hostName": "localhost",
+        "port": 5005,
+        "projectName": "minitwit-java" 
+      },
+     {
+        "type": "chrome",
+        "request": "launch",
+        "name": "Svelte: Debug Browser",
+        "url": "http://localhost:5173",
+        "webRoot": "${workspaceFolder:minitwit-svelte}"
+      }
+    ]
+  }
+}

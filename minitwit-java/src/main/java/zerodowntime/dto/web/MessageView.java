@@ -1,4 +1,4 @@
-package zerodowntime.dto;
+package zerodowntime.dto.web;
 
 public record MessageView(
         String username,

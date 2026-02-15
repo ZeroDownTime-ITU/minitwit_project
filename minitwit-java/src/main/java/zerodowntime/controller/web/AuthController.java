@@ -4,7 +4,10 @@ import java.util.List;
 import java.util.Map;
 
 import io.javalin.http.Context;
-import zerodowntime.constants.AppConstants.Web;
+import zerodowntime.constants.AppConstants.PublicApi;
+import zerodowntime.dto.web.RegisterRequest;
+import zerodowntime.dto.web.LoginRequest;
+import zerodowntime.dto.web.UserDto;
 import zerodowntime.model.User;
 import zerodowntime.service.AuthService;
 
@@ -15,64 +18,62 @@ public class AuthController extends BaseController {
         this.authService = authService;
     }
 
-    public void showLogin(Context ctx) {
-        if (ctx.attribute("user") != null) {
-            ctx.redirect(Web.HOME);
-            return;
-        }
-        ctx.render("login.html", createModel(ctx));
-    }
+    // public void showLogin(Context ctx) {
+    // if (ctx.attribute("user") != null) {
+    // ctx.redirect(PublicApi.HOME);
+    // return;
+    // }
+    // ctx.render("login.html", createModel(ctx));
+    // }
 
     public void handleLogin(Context ctx) {
-        String username = ctx.formParam("username");
-        String password = ctx.formParam("password");
+        LoginRequest login = ctx.bodyAsClass(LoginRequest.class);
 
         try {
-            User user = authService.loginUser(username, password);
+            User user = authService.loginUser(login.username(), login.password());
+            UserDto userDto = new UserDto(
+                    user.getUserId(),
+                    user.getUsername(),
+                    user.getEmail());
 
-            ctx.sessionAttribute("flashes", List.of("You were logged in"));
             ctx.sessionAttribute("user_id", user.getUserId());
-            ctx.redirect(Web.HOME);
+
+            ctx.status(200).json(userDto);
         } catch (IllegalArgumentException e) {
-            Map<String, Object> model = createModel(ctx);
-            model.put("error", e.getMessage());
-            ctx.render("login.html", model);
+            ctx.status(401).json(Map.of("error", e.getMessage()));
         }
     }
 
-    public void showRegister(Context ctx) {
-        if (ctx.attribute("user") != null) {
-            ctx.redirect(Web.HOME);
-            return;
-        }
-        ctx.render("register.html", createModel(ctx));
-    }
+    // public void showRegister(Context ctx) {
+    // if (ctx.attribute("user") != null) {
+    // ctx.redirect(PublicApi.USER_TIMELINE);
+    // return;
+    // }
+    // ctx.render("register.html", createModel(ctx));
+    // }
 
     public void handleRegister(Context ctx) {
-        String username = ctx.formParam("username");
-        String email = ctx.formParam("email");
-        String password = ctx.formParam("password");
-        String passwordConfirm = ctx.formParam("password2");
+        RegisterRequest register = ctx.bodyAsClass(RegisterRequest.class);
 
         try {
-            if (password == null || !password.equals(passwordConfirm)) {
+            if (register.password() == null || !register.password().equals(register.passwordConfirm())) {
                 throw new IllegalArgumentException("The two passwords do not match");
             }
 
-            authService.registerUser(username, email, password);
+            authService.registerUser(register.username(), register.email(), register.password());
 
-            ctx.sessionAttribute("flashes", List.of("You were successfully registered"));
-            ctx.redirect("/login");
+            ctx.status(200);
+            // ctx.sessionAttribute("flashes", List.of("You were successfully registered"));
+            // ctx.redirect("/login");
         } catch (IllegalArgumentException e) {
-            Map<String, Object> model = createModel(ctx);
-            model.put("error", e.getMessage());
-            ctx.render("register.html", model);
+            ctx.status(401).json(Map.of("error", e.getMessage()));
         }
     }
 
     public void handleLogout(Context ctx) {
         ctx.sessionAttribute("user_id", null);
-        ctx.sessionAttribute("flashes", List.of("You were logged out"));
-        ctx.redirect(Web.PUBLIC);
+        ctx.status(200);
+        // ctx.sessionAttribute("flashes", List.of("You were logged out"));
+        // ctx.redirect(PublicApi.PUBLIC_TIMELINE);
     }
 }

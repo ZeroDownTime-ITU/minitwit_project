@@ -1,7 +1,7 @@
 package zerodowntime.service;
 
-import zerodowntime.dto.MessageDto;
-import zerodowntime.dto.MessageView;
+import zerodowntime.dto.web.MessageDto;
+import zerodowntime.dto.web.MessageView;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.util.FormatUtils;
 

@@ -1,4 +1,4 @@
-package zerodowntime.dto;
+package zerodowntime.dto.web;
 
 public class MessageDto {
     private int messageId;

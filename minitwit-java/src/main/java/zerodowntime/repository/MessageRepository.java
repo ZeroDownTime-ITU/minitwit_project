@@ -4,7 +4,7 @@ import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
 import org.jdbi.v3.sqlobject.customizer.Bind;
 import org.jdbi.v3.sqlobject.statement.SqlQuery;
 
-import zerodowntime.dto.MessageDto;
+import zerodowntime.dto.web.MessageDto;
 
 import java.util.List;
 

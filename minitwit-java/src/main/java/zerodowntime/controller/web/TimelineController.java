@@ -5,8 +5,8 @@ import java.util.Map;
 
 import io.javalin.http.Context;
 import zerodowntime.constants.AppConstants;
-import zerodowntime.constants.AppConstants.Web;
-import zerodowntime.dto.MessageView;
+import zerodowntime.constants.AppConstants.PublicApi;
+import zerodowntime.dto.web.MessageView;
 import zerodowntime.model.User;
 import zerodowntime.service.TimelineService;
 
@@ -17,14 +17,15 @@ public class TimelineController extends BaseController {
         this.timelineService = timelineService;
     }
 
-    // Shows a users timeline or if no user is logged in it will redirect to the public timeline. This shows the user's
+    // Shows a users timeline or if no user is logged in it will redirect to the
+    // public timeline. This shows the user's
     // messages as well as all the messages of followed users.
     public void showUserTimeline(Context ctx) {
         System.out.println("We got a visitor from: " + ctx.ip());
 
         User user = ctx.attribute("user");
         if (user == null) {
-            ctx.redirect(Web.PUBLIC);
+            ctx.redirect(PublicApi.PUBLIC_TIMELINE);
             return;
         }
 
@@ -41,10 +42,11 @@ public class TimelineController extends BaseController {
     public void showPublicTimeline(Context ctx) {
         List<MessageView> messages = timelineService.getPublicTimeline(AppConstants.PER_PAGE);
 
-        Map<String, Object> model = createModel(ctx);
-        model.put("messages", messages);
-        model.put("endpoint", "public_timeline");
+        ctx.status(200).json(messages);
+        // Map<String, Object> model = createModel(ctx);
+        // model.put("messages", messages);
+        // model.put("endpoint", "public_timeline");
 
-        ctx.render("timeline.html", model);
+        // ctx.render("timeline.html", model);
     }
 }

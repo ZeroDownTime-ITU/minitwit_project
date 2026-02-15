@@ -29,8 +29,8 @@ import io.javalin.http.Context;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import io.javalin.rendering.template.JavalinPebble;
-import zerodowntime.constants.AppConstants.Api;
-import zerodowntime.constants.AppConstants.Web;
+import zerodowntime.constants.AppConstants.PublicApi;
+import zerodowntime.constants.AppConstants.SimulatorApi;
 import zerodowntime.controller.simulator.SimulatorController;
 import zerodowntime.controller.web.AuthController;
 import zerodowntime.controller.web.TimelineController;
@@ -228,6 +228,13 @@ public class App {
                 swaggerConfig.setUiPath("/swagger");
                 swaggerConfig.setDocumentationPath("/openapi");
             }));
+
+            // Allow CORS for the API routes (e.g. for the Svelte frontend)
+            // config.bundledPlugins.enableCors(cors -> {
+            // cors.addRule(it -> {
+            // it.allowHost("http://localhost:5173");
+            // });
+            // });
         });
 
         // Create repositories
@@ -270,31 +277,31 @@ public class App {
         // ============ WEB APP ROUTES ============
 
         // Auth routes
-        app.get(Web.LOGIN, authController::showLogin);
-        app.post(Web.LOGIN, authController::handleLogin);
-        app.get(Web.REGISTER, authController::showRegister);
-        app.post(Web.REGISTER, authController::handleRegister);
-        app.get(Web.LOGOUT, authController::handleLogout);
+        // app.get(Web.LOGIN, authController::showLogin);
+        app.post(PublicApi.LOGIN, authController::handleLogin);
+        // app.get(PublicApi.REGISTER, authController::showRegister);
+        app.post(PublicApi.REGISTER, authController::handleRegister);
+        app.post(PublicApi.LOGOUT, authController::handleLogout);
 
         // Timeline routes
-        app.get(Web.HOME, timelineController::showUserTimeline);
-        app.get(Web.PUBLIC, timelineController::showPublicTimeline);
+        app.get(PublicApi.USER_TIMELINE, timelineController::showUserTimeline);
+        app.get(PublicApi.PUBLIC_TIMELINE, timelineController::showPublicTimeline);
 
         // User routes
         // app.get(Web.USER_PROFILE, userController::showUserProfile);
-        app.get(Web.FOLLOW, userController::handleFollow);
-        //app.get(Web.UNFOLLOW, userController::handleUnfollow);
-
+        app.get(PublicApi.FOLLOW, userController::handleFollow);
+        // app.get(Web.UNFOLLOW, userController::handleUnfollow);
 
         // ============ SIMULATOR API ROUTES ============
 
-        app.post(Api.REGISTER, simController::postRegister);
-        app.get(Api.LATEST, simController::getLatest);
-        app.post(Api.MSGS_USER, simController::postMessage);
-        app.get(Api.FLLWS_USER, simController::getFollowers);
-        app.post(Api.FLLWS_USER, simController::postFollow);
+        app.post(SimulatorApi.REGISTER, simController::postRegister);
+        app.get(SimulatorApi.LATEST, simController::getLatest);
+        app.post(SimulatorApi.MSGS_USER, simController::postMessage);
+        app.get(SimulatorApi.FLLWS_USER, simController::getFollowers);
+        app.post(SimulatorApi.FLLWS_USER, simController::postFollow);
 
-        // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE ============
+        // ============ TODO: BELOW ALL STILL NEED TO BE REWORKED LIKE THE ONES ABOVE
+        // ============
 
         // Registers a new message for the user.
         app.post("/add_message", context -> {

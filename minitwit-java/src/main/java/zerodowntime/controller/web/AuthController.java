@@ -54,14 +54,8 @@ public class AuthController extends BaseController {
     }
 
     public void getSession(Context ctx) {
-        Integer userId = ctx.sessionAttribute("user_id");
+        User user = ctx.attribute("user");
 
-        if (userId == null) {
-            ctx.status(401);
-            return;
-        }
-
-        User user = userService.getUserById(userId);
         if (user == null) {
             ctx.status(401);
             return;

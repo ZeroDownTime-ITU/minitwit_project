@@ -11,7 +11,7 @@ import zerodowntime.model.User;
 import zerodowntime.service.MessageService;
 import zerodowntime.service.UserService;
 
-public class UserController {
+public class UserController extends BaseController {
     private UserService userService;
     private MessageService messageService;
 
@@ -81,13 +81,5 @@ public class UserController {
         } else {
             ctx.status(400).json(Map.of("error", "Message text cannot be empty."));
         }
-    }
-
-    private int getAuthenticatedUserId(Context ctx) {
-        Integer userId = ctx.sessionAttribute("user_id");
-        if (userId == null) {
-            throw new UnauthorizedResponse("You must be logged in.");
-        }
-        return userId;
     }
 }

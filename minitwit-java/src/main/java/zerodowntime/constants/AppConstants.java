@@ -1,29 +1,37 @@
 package zerodowntime.constants;
 
 public class AppConstants {
-    // Database & Pagination
     public static final int PER_PAGE = 30;
     public static final String DB_PATH = "data/minitwit-java.db";
 
-    // Web UI Routes
-    public static class Web {
-        public static final String HOME = "/";
-        public static final String PUBLIC = "/public";
-        public static final String LOGIN = "/login";
-        public static final String LOGOUT = "/logout";
-        public static final String REGISTER = "/register";
-        public static final String ADD_MESSAGE = "/add_message";
-        public static final String USER_PROFILE = "/{username}";
-        public static final String FOLLOW = "/{username}/follow";
-        public static final String UNFOLLOW = "/{username}/unfollow";
+    /**
+     * Simulator API: Strictly follows the Minitwit Simulator Specification.
+     * These use the 'Authorization' header.
+     */
+    public static class SimulatorApi {
+        public static final String LATEST = "/api/latest";
+        public static final String REGISTER = "/api/register";
+        public static final String MSGS = "/api/msgs";
+        public static final String MSGS_USER = "/api/msgs/{username}";
+        public static final String FLLWS_USER = "/api/fllws/{username}";
     }
 
-    // Simulator/API Routes
-    public static class Api {
-        public static final String LATEST = "/latest";
-        public static final String REGISTER = "/register"; // Or "/api/register" if you prefix
-        public static final String MSGS = "/msgs";
-        public static final String MSGS_USER = "/msgs/{username}";
-        public static final String FLLWS_USER = "/fllws/{username}";
+    /**
+     * Frontend API: Endpoints for Svelte frontend.
+     * These use session-based authentication.
+     */
+    public static class PublicApi {
+        public static final String PUBLIC_TIMELINE = "/api/public-timeline";
+        public static final String USER_TIMELINE = "/api/user-timeline";
+        public static final String USER_PROFILE = "/api/user/{username}";
+        public static final String FOLLOW = "/api/follow/{username}";
+        public static final String UNFOLLOW = "/api/unfollow/{username}";
+        public static final String USER_FOLLOWING = "/api/user/{username}/following";
+        public static final String POSTMESSAGE = "/api/add-message";
+
+        public static final String LOGIN = "/api/auth/login";
+        public static final String LOGOUT = "/api/auth/logout";
+        public static final String REGISTER = "/api/auth/register";
+        public static final String SESSION = "/api/auth/session";
     }
 }

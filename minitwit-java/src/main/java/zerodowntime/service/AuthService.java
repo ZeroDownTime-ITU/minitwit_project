@@ -12,7 +12,7 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    public User login(String username, String password) {
+    public User loginUser(String username, String password) {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid username"));
 
@@ -23,7 +23,7 @@ public class AuthService {
         return user;
     }
 
-    public User register(String username, String email, String password) {
+    public User registerUser(String username, String email, String password) {
         validateUsername(username);
         validateEmail(email);
         validatePassword(password);

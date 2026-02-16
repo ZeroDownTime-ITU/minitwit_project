@@ -15,7 +15,7 @@ public class FormatUtils {
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
     }
 
-    public static String gravatarUrl(String email, int size) {
+    public static String getGravatarUrl(String email, int size) {
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] hash = md.digest(email.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
@@ -23,7 +23,7 @@ public class FormatUtils {
             for (byte b : hash) {
                 hex.append(String.format("%02x", b));
             }
-            return "http://www.gravatar.com/avatar/" + hex + "?d=identicon&s=" + size;
+            return "https://www.gravatar.com/avatar/" + hex + "?d=identicon&s=" + size;
         } catch (NoSuchAlgorithmException e) {
             throw new RuntimeException(e);
         }

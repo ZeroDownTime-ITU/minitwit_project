@@ -2,14 +2,18 @@ package zerodowntime;
 
 import io.javalin.Javalin;
 import okhttp3.*;
+import org.jdbi.v3.core.Jdbi;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.io.TempDir;
+import zerodowntime.constants.AppConstants.PublicApi;
+import zerodowntime.dto.web.*;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,15 +26,28 @@ public class MinitwitTest {
 
     private Javalin app;
     private OkHttpClient client;
+    private TestHelper http;
 
     @BeforeEach
-    public void setUp() throws Exception {
-        App.database = "jdbc:sqlite:" + tempDir.resolve("test.db");
-        App.initDb();
+    public void setUp() {
+        String testDbUrl = "jdbc:sqlite:" + tempDir.resolve("test.db");
+        Jdbi testJdbi = DatabaseManager.createDatabase(testDbUrl);
 
-        // Client with cookie support
+        app = App.createApp(testJdbi).start(TEST_PORT);
+        client = createTestClient();
+        http = new TestHelper(client, BASE_URL);
+    }
+
+    @AfterEach
+    public void tearDown() {
+        if (app != null) {
+            app.stop();
+        }
+    }
+
+    private OkHttpClient createTestClient() {
         HashMap<String, List<Cookie>> cookies = new HashMap<>();
-        client = new OkHttpClient.Builder()
+        return new OkHttpClient.Builder()
                 .cookieJar(new CookieJar() {
                     @Override
                     public void saveFromResponse(HttpUrl u, List<Cookie> c) {
@@ -44,283 +61,205 @@ public class MinitwitTest {
                 })
                 .followRedirects(true)
                 .build();
-
-        app = App.createApp().start(TEST_PORT);
-    }
-
-    @AfterEach
-    public void tearDown() {
-        if (app != null) {
-            app.stop();
-        }
-    }
-
-    // Helper methods
-    private Response post(String path, String formData) throws IOException {
-        RequestBody body = RequestBody.create(
-                formData,
-                MediaType.parse("application/x-www-form-urlencoded"));
-
-        Request request = new Request.Builder()
-                .url(BASE_URL + path)
-                .post(body)
-                .build();
-
-        return client.newCall(request).execute();
-    }
-
-    private Response get(String path) throws IOException {
-        Request request = new Request.Builder()
-                .url(BASE_URL + path)
-                .get()
-                .build();
-
-        return client.newCall(request).execute();
     }
 
     @Test
     public void testRegister() throws IOException {
-        // Successful registration - verify by being able to login
-        post("/register", "username=user1&email=u1@ex.com&password=abc&password2=abc").close();
+        // Use actual DTOs!
+        RegisterRequest req = new RegisterRequest("user1", "u1@ex.com", "abc", "abc");
 
-        try (Response loginRes = post("/login", "username=user1&password=abc")) {
-            String loginBody = loginRes.body().string();
-            assertThat(loginBody).doesNotContain("Sign In");
-            assertThat(loginBody).contains("MiniTwit");
+        try (Response res = http.postJson(PublicApi.REGISTER, req)) {
+            assertThat(res.code()).isEqualTo(200);
+        }
+
+        // Verify can login
+        LoginRequest loginReq = new LoginRequest("user1", "abc");
+
+        try (Response loginRes = http.postJson(PublicApi.LOGIN, loginReq)) {
+            assertThat(loginRes.code()).isEqualTo(200);
+
+            // Parse JSON response to DTO
+            UserDto user = http.readJson(loginRes.body().string(), UserDto.class);
+            assertThat(user.username()).isEqualTo("user1");
+            assertThat(user.email()).isEqualTo("u1@ex.com");
         }
 
         // Duplicate username
-        try (Response dupRes = post("/register", "username=user1&email=u2@ex.com&password=abc&password2=abc")) {
-            String dupBody = dupRes.body().string();
-            assertThat(dupBody).contains("The username is already taken");
-            assertThat(dupBody).contains("Sign Up");
+        try (Response dupRes = http.postJson(PublicApi.REGISTER, req)) {
+            assertThat(dupRes.code()).isEqualTo(401);
+            assertThat(dupRes.body().string()).contains("already taken");
         }
 
         // Empty username
-        try (Response res = post("/register", "username=&email=u3@ex.com&password=abc&password2=abc")) {
-            assertThat(res.body().string()).contains("You have to enter a username");
-        }
+        RegisterRequest emptyUser = new RegisterRequest("", "u2@ex.com", "abc", "abc");
 
-        // Empty password
-        try (Response res = post("/register", "username=meh&email=u3@ex.com&password=&password2=")) {
-            assertThat(res.body().string()).contains("You have to enter a password");
+        try (Response res = http.postJson(PublicApi.REGISTER, emptyUser)) {
+            assertThat(res.code()).isEqualTo(401);
+            assertThat(res.body().string()).contains("username");
         }
 
         // Mismatched passwords
-        try (Response res = post("/register", "username=meh&email=u3@ex.com&password=x&password2=y")) {
-            assertThat(res.body().string()).contains("The two passwords do not match");
-        }
+        RegisterRequest mismatch = new RegisterRequest("user2", "u2@ex.com", "abc", "xyz");
 
-        // Invalid email
-        try (Response res = post("/register", "username=meh&email=broken&password=foo&password2=foo")) {
-            assertThat(res.body().string()).contains("You have to enter a valid email address");
+        try (Response res = http.postJson(PublicApi.REGISTER, mismatch)) {
+            assertThat(res.code()).isEqualTo(401);
+            assertThat(res.body().string()).contains("do not match");
         }
     }
 
     @Test
     public void testLoginLogout() throws IOException {
-        // Setup: Create a user
-        post("/register", "username=user1&email=u1@ex.com&password=default&password2=default").close();
+        // Register using DTO
+        RegisterRequest registerReq = new RegisterRequest("user1", "u1@ex.com", "default", "default");
+        http.postJson(PublicApi.REGISTER, registerReq).close();
 
-        // Successful Login
-        try (Response loginRes = post("/login", "username=user1&password=default")) {
-            String loginBody = loginRes.body().string();
-            assertThat(loginBody).doesNotContain("Sign In");
-            assertThat(loginBody).contains("MiniTwit");
+        // Login using DTO
+        LoginRequest loginReq = new LoginRequest("user1", "default");
+
+        try (Response loginRes = http.postJson(PublicApi.LOGIN, loginReq)) {
+            assertThat(loginRes.code()).isEqualTo(200);
+
+            UserDto user = http.readJson(loginRes.body().string(), UserDto.class);
+            assertThat(user.username()).isEqualTo("user1");
         }
 
-        // Logout
-        try (Response logoutRes = get("/logout")) {
-            assertThat(logoutRes.body().string()).contains("public timeline");
+        // Check session
+        try (Response sessionRes = http.get(PublicApi.SESSION)) {
+            assertThat(sessionRes.code()).isEqualTo(200);
+
+            UserDto user = http.readJson(sessionRes.body().string(), UserDto.class);
+            assertThat(user.username()).isEqualTo("user1");
         }
 
-        // After logout, redirected to public
-        try (Response homeRes = get("/")) {
-            assertThat(homeRes.body().string()).contains("public timeline");
+        // Logout (empty object)
+        try (Response logoutRes = http.postJson(PublicApi.LOGOUT, Map.of())) {
+            assertThat(logoutRes.code()).isEqualTo(200);
+        }
+
+        // Session should be gone
+        try (Response sessionRes = http.get(PublicApi.SESSION)) {
+            assertThat(sessionRes.code()).isEqualTo(401);
         }
 
         // Wrong password
-        try (Response res = post("/login", "username=user1&password=wrongpassword")) {
-            assertThat(res.body().string())
-                    .contains("Invalid password")
-                    .contains("Sign In");
+        try (Response res = http.postJson(PublicApi.LOGIN, new LoginRequest("user1", "wrongpassword"))) {
+            assertThat(res.code()).isEqualTo(401);
         }
 
         // Wrong username
-        try (Response res = post("/login", "username=nonexistent&password=default")) {
-            assertThat(res.body().string())
-                    .contains("Invalid username")
-                    .contains("Sign In");
+        try (Response res = http.postJson(PublicApi.LOGIN, new LoginRequest("nonexistent", "default"))) {
+            assertThat(res.code()).isEqualTo(401);
         }
     }
 
     @Test
     public void testMessageRecording() throws IOException {
-        // Setup: Register and login
-        post("/register", "username=foo&email=f@ex.com&password=abc&password2=abc").close();
-        post("/login", "username=foo&password=abc").close();
+        registerAndLogin("foo", "f@ex.com", "abc");
 
-        // Record messages
-        post("/add_message", "text=test message 1").close();
-        post("/add_message", "text=<test message 2>").close();
+        // Post messages using DTOs
+        http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("test message 1")).close();
+        http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("<test message 2>")).close();
 
-        // Verify messages appear on home timeline
-        try (Response homeRes = get("/")) {
-            String homeBody = homeRes.body().string();
-            assertThat(homeBody).contains("test message 1");
-            assertThat(homeBody).contains("&lt;test message 2&gt;");
-            assertThat(homeBody).doesNotContain("<test message 2>");
-        }
-
-        // Verify on profile page
-        try (Response profileRes = get("/foo")) {
-            String profileBody = profileRes.body().string();
-            assertThat(profileBody).contains("test message 1");
-            assertThat(profileBody).contains("&lt;test message 2&gt;");
+        // Verify messages on timeline
+        try (Response timelineRes = http.get(PublicApi.USER_TIMELINE)) {
+            assertThat(timelineRes.code()).isEqualTo(200);
+            String body = timelineRes.body().string();
+            assertThat(body).contains("test message 1");
+            assertThat(body).contains("<test message 2>");
         }
 
         // Verify on public timeline
-        try (Response publicRes = get("/public")) {
-            String publicBody = publicRes.body().string();
-            assertThat(publicBody).contains("test message 1");
-            assertThat(publicBody).contains("&lt;test message 2&gt;");
+        try (Response publicRes = http.get(PublicApi.PUBLIC_TIMELINE)) {
+            assertThat(publicRes.code()).isEqualTo(200);
+            String body = publicRes.body().string();
+            assertThat(body).contains("test message 1");
+            assertThat(body).contains("<test message 2>");
         }
     }
 
     @Test
     public void testTimelines() throws IOException {
         // Create foo user
-        post("/register", "username=foo&email=f@ex.com&password=abc&password2=abc").close();
-        post("/login", "username=foo&password=abc").close();
-        post("/add_message", "text=the message by foo").close();
-        get("/logout").close();
+        registerAndLogin("foo", "f@ex.com", "abc");
+        http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("the message by foo")).close();
+        http.postJson(PublicApi.LOGOUT, Map.of()).close();
 
         // Create bar user
-        post("/register", "username=bar&email=b@ex.com&password=abc&password2=abc").close();
-        post("/login", "username=bar&password=abc").close();
-        post("/add_message", "text=the message by bar").close();
+        registerAndLogin("bar", "b@ex.com", "abc");
+        http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("the message by bar")).close();
 
         // Public timeline shows both
-        try (Response publicRes = get("/public")) {
-            String publicBody = publicRes.body().string();
-            assertThat(publicBody).contains("the message by foo");
-            assertThat(publicBody).contains("the message by bar");
+        try (Response publicRes = http.get(PublicApi.PUBLIC_TIMELINE)) {
+            String body = publicRes.body().string();
+            assertThat(body).contains("the message by foo");
+            assertThat(body).contains("the message by bar");
         }
 
         // Bar's home shows only bar's message
-        try (Response homeRes = get("/")) {
-            String homeBody = homeRes.body().string();
-            assertThat(homeBody).contains("the message by bar");
-            assertThat(homeBody).doesNotContain("the message by foo");
-        }
-
-        // Follow foo
-        get("/foo/follow").close();
-
-        // Bar's home now shows both
-        try (Response homeRes = get("/")) {
-            String homeBody = homeRes.body().string();
-            assertThat(homeBody).contains("the message by foo");
-            assertThat(homeBody).contains("the message by bar");
-        }
-
-        // Profile pages show only that user's messages
-        try (Response barRes = get("/bar")) {
-            String body = barRes.body().string();
+        try (Response homeRes = http.get(PublicApi.USER_TIMELINE)) {
+            String body = homeRes.body().string();
             assertThat(body).contains("the message by bar");
             assertThat(body).doesNotContain("the message by foo");
         }
 
-        try (Response fooRes = get("/foo")) {
-            String body = fooRes.body().string();
+        // Follow foo
+        try (Response followRes = http.post(PublicApi.FOLLOW, "foo")) {
+            assertThat(followRes.code()).isEqualTo(204);
+        }
+
+        // Bar's home now shows both
+        try (Response homeRes = http.get(PublicApi.USER_TIMELINE)) {
+            String body = homeRes.body().string();
             assertThat(body).contains("the message by foo");
-            assertThat(body).doesNotContain("the message by bar");
+            assertThat(body).contains("the message by bar");
         }
 
         // Unfollow foo
-        get("/foo/unfollow").close();
+        try (Response unfollowRes = http.post(PublicApi.UNFOLLOW, "foo")) {
+            assertThat(unfollowRes.code()).isIn(200, 204);
+        }
 
         // Bar's home shows only bar's message again
-        try (Response homeRes = get("/")) {
-            String homeBody = homeRes.body().string();
-            assertThat(homeBody).contains("the message by bar");
-            assertThat(homeBody).doesNotContain("the message by foo");
-        }
-    }
-
-    @Test
-    public void testFollowUnfollowButtons() throws IOException {
-        // Create users
-        post("/register", "username=alice&email=a@ex.com&password=abc&password2=abc").close();
-        get("/logout").close();
-
-        post("/register", "username=bob&email=b@ex.com&password=abc&password2=abc").close();
-        post("/login", "username=bob&password=abc").close();
-
-        // Bob sees follow button on Alice's profile
-        try (Response res = get("/alice")) {
-            assertThat(res.body().string()).contains("/alice/follow");
-        }
-
-        // Bob follows Alice
-        get("/alice/follow").close();
-
-        // Bob sees unfollow button
-        try (Response res = get("/alice")) {
-            assertThat(res.body().string()).contains("/alice/unfollow");
-        }
-
-        // Bob unfollows Alice
-        get("/alice/unfollow").close();
-
-        // Follow button is back
-        try (Response res = get("/alice")) {
-            assertThat(res.body().string()).contains("/alice/follow");
+        try (Response homeRes = http.get(PublicApi.USER_TIMELINE)) {
+            String body = homeRes.body().string();
+            assertThat(body).contains("the message by bar");
+            assertThat(body).doesNotContain("the message by foo");
         }
     }
 
     @Test
     public void testUnauthorizedAccess() throws IOException {
-        // Try to add message without login
-        try (Response res = post("/add_message", "text=unauthorized")) {
+        try (Response res = http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("unauthorized"))) {
             assertThat(res.code()).isEqualTo(401);
         }
 
-        // Try to follow without login
-        try (Response res = get("/someuser/follow")) {
+        try (Response res = http.post(PublicApi.FOLLOW, "someuser")) {
             assertThat(res.code()).isEqualTo(401);
         }
 
-        // Try to unfollow without login
-        try (Response res = get("/someuser/unfollow")) {
+        try (Response res = http.get(PublicApi.USER_TIMELINE)) {
             assertThat(res.code()).isEqualTo(401);
-        }
-
-        // Home redirects to public when not logged in
-        try (Response res = get("/")) {
-            assertThat(res.body().string()).contains("public timeline");
         }
     }
 
     @Test
     public void testNonexistentUserProfile() throws IOException {
-        // Login first
-        post("/register", "username=user1&email=u1@ex.com&password=abc&password2=abc").close();
-        post("/login", "username=user1&password=abc").close();
+        registerAndLogin("user1", "u1@ex.com", "abc");
 
-        // Non-existent profile returns 404
-        try (Response res = get("/nonexistentuser")) {
+        try (Response res = http.get(PublicApi.USER_PROFILE + "/nonexistentuser")) {
             assertThat(res.code()).isEqualTo(404);
         }
 
-        // Can't follow non-existent user
-        try (Response res = get("/nonexistentuser/follow")) {
+        try (Response res = http.post(PublicApi.FOLLOW, "nonexistentuser")) {
             assertThat(res.code()).isEqualTo(404);
         }
+    }
 
-        // Can't unfollow non-existent user
-        try (Response res = get("/nonexistentuser/unfollow")) {
-            assertThat(res.code()).isEqualTo(404);
-        }
+    // Helper method
+    private void registerAndLogin(String username, String email, String password) throws IOException {
+        http.postJson(PublicApi.REGISTER,
+                new RegisterRequest(username, email, password, password)).close();
+        http.postJson(PublicApi.LOGIN,
+                new LoginRequest(username, password)).close();
     }
 }

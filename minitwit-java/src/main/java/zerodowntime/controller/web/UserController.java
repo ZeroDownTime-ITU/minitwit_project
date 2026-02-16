@@ -75,7 +75,7 @@ public class UserController extends BaseController {
         MessageRequest request = ctx.bodyAsClass(MessageRequest.class);
 
         if (request.text() != null && !request.text().isEmpty()) {
-            MessageView newMessage = messageService.createMessage(userId, request.text());
+            MessageView newMessage = messageService.addMessage(userId, request.text());
 
             ctx.status(201).json(newMessage);
         } else {

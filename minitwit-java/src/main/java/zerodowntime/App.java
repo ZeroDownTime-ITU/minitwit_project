@@ -63,7 +63,7 @@ public class App {
         AuthController authController = new AuthController(authService, userService);
         TimelineController timelineController = new TimelineController(timelineService);
         UserController userController = new UserController(userService, messageService);
-        SimulatorController simController = new SimulatorController(authService, userService);
+        SimulatorController simController = new SimulatorController(authService, userService, messageService);
 
         app.before("/api/*", ctx -> { // ← Only for /api/* routes
             Integer userId = ctx.sessionAttribute("user_id");
@@ -76,17 +76,17 @@ public class App {
 
         // ============ WEB APP ROUTES ============
 
-        // Auth routes
+        // Auth
         app.post(PublicApi.LOGIN, authController::handleLogin);
         app.post(PublicApi.REGISTER, authController::handleRegister);
         app.post(PublicApi.LOGOUT, authController::handleLogout);
         app.get(PublicApi.SESSION, authController::getSession);
 
-        // Timeline routes
+        // Timeline
         app.get(PublicApi.USER_TIMELINE, timelineController::getUserTimeline);
         app.get(PublicApi.PUBLIC_TIMELINE, timelineController::getPublicTimeline);
 
-        // User routes
+        // User
         app.get(PublicApi.USER_PROFILE, userController::getUserProfile);
         app.post(PublicApi.POSTMESSAGE, userController::handlePostMessage);
         app.post(PublicApi.FOLLOW, userController::handleFollow);

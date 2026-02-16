@@ -10,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DriverManager;
+import java.sql.Statement;
 
 public class DatabaseManager {
 
@@ -58,7 +59,9 @@ public class DatabaseManager {
             for (String statement : schema.split(";")) {
                 String trimmed = statement.trim();
                 if (!trimmed.isEmpty()) {
-                    conn.createStatement().execute(trimmed);
+                    try (Statement stmt = conn.createStatement()) {
+                        stmt.execute(trimmed);
+                    }
                 }
             }
         }

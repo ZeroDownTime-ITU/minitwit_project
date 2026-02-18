@@ -31,3 +31,6 @@ dependency-reduced-pom.xml
 .vagrant/
 *.box
 vagrant.log
+
+# devcontainer for ymar
+.devcontainer/

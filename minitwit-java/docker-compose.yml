@@ -17,10 +17,11 @@ services:
     volumes:
       - ../minitwit-svelte:/app
       - /app/node_modules
-      - /app/.svelte-kit  
+      - /app/.svelte-kit
+    command: npm run dev -- --host 0.0.0.0  
     environment:
       - NODE_ENV=development
-      - CHOKIDAR_USEPOLLING=1 // Enable polling to make hot reload work for Svelte
-      - CHOKIDAR_INTERVAL=100
+      # - CHOKIDAR_USEPOLLING=1 // Enable polling to make hot reload work for Svelte
+      # - CHOKIDAR_INTERVAL=100
     depends_on:
       - java-backend

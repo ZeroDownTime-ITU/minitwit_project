@@ -24,9 +24,9 @@ public class App {
         Jdbi jdbi = DatabaseManager.createDatabase("jdbc:sqlite:data/minitwit-java.db");
 
         // Start server
-        createApp(jdbi).start(7070);
+        createApp(jdbi).start("0.0.0.0", 7070);
 
-        System.out.println("Server started on http://localhost:7070");
+        System.out.println("Server started on http://0.0.0.0:7070");
     }
 
     public static Javalin createApp(Jdbi jdbi) {
@@ -65,7 +65,7 @@ public class App {
         UserController userController = new UserController(userService, messageService);
         SimulatorController simController = new SimulatorController(authService, userService, messageService);
 
-        app.before("/api/*", ctx -> { // ← Only for /api/* routes
+        app.before("/api/*", ctx -> {
             Integer userId = ctx.sessionAttribute("user_id");
             if (userId != null) {
                 userRepo.findById(userId).ifPresent(user -> {

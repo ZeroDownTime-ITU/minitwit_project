@@ -1,0 +1,17 @@
+.openapi-generator-ignore
+README.md
+pom.xml
+src/gen/java/org/openapitools/api/FllwsApi.java
+src/gen/java/org/openapitools/api/LatestApi.java
+src/gen/java/org/openapitools/api/MsgsApi.java
+src/gen/java/org/openapitools/api/RegisterApi.java
+src/gen/java/org/openapitools/api/RestApplication.java
+src/gen/java/org/openapitools/api/RestResourceRoot.java
+src/gen/java/org/openapitools/model/ErrorResponse.java
+src/gen/java/org/openapitools/model/FollowAction.java
+src/gen/java/org/openapitools/model/FollowsResponse.java
+src/gen/java/org/openapitools/model/LatestValue.java
+src/gen/java/org/openapitools/model/Message.java
+src/gen/java/org/openapitools/model/PostMessage.java
+src/gen/java/org/openapitools/model/RegisterRequest.java
+src/main/openapi/openapi.yaml

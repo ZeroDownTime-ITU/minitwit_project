@@ -2,16 +2,28 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
-  config.vm.define "minitwit" do |minitwit|
-    minitwit.vm.box = "digital_ocean"
+  # DATABASE SERVER (ONLY THE DATABSE)
+  config.vm.box = "digital_ocean"
+=begin
+  minitwit.vm.box = "digital_ocean"
+  config. vm. define "db_server" do |db_server| db_server provider :digital_ocean do provider|
+    provider.token = ENV["DIGITAL_OCEAN_KEY"]
+    provider. ssh_key_name = 'Magnus Mac'
+    provider. image = "ubuntu-22-04-x64"
+    provider.region = "fra1"
+    provider.size = "s-1vcpu-1gb"
+  end 
+=end
+  # MINITWIT (DATABASE + WEBSERVER)
+  config.vm.define "minitwit" do |minitwit| 
     minitwit.vm.provider :digital_ocean do |provider|
-      provider.token = ENV["DIGITAL_OCEAN_KEY"]
-      provider.ssh_key_name = 'Magnus_Mac'
-
-      provider.image = "ubuntu-22-04-x64"
-      provider.region = "fra1"
-      provider.size = "s-1vcpu-1gb"
+    provider.token = ENV["DIGITAL_OCEAN_KEY"]
+    provider.ssh_key_name = 'Magnus_Mac'
+    provider.image = "ubuntu-22-04-x64"
+    provider.region = "fra1"
+    provider.size = "s-1vcpu-1gb"
     end
+  end
   # CHANGE THIS LINE IF THE SSH FOLDER IS DIFFERENT. 
   config.ssh.private_key_path = '~/.ssh/id_ed25519'
   config.vm.synced_folder ".", "/vagrant", type: "rsync"

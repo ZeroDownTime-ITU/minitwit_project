@@ -21,9 +21,9 @@ systemctl enable --now docker
 usermod -aG docker vagrant # allow us to execute docker commands, without using sudo
 
 echo "Cloning and starting app..."
-git clone https://github.com/ZeroDownTime-ITU/minitwit_project.git /minitwit_project
+git clone https://github.com/ZeroDownTime-ITU/minitwit_project.git vagrant/minitwit_project
 
-cd /minitwit_project/minitwit-java
+cd vagrant/minitwit_project/minitwit-java
 docker compose up -d
 
 echo "Provisioning finished! App is starting in the background."

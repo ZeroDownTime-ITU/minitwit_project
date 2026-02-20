@@ -99,6 +99,8 @@ public class App {
         app.post(SimulatorApi.MSGS_USER, simController::postMessage);
         app.get(SimulatorApi.FLLWS_USER, simController::getFollowers);
         app.post(SimulatorApi.FLLWS_USER, simController::postFollow);
+        app.get(SimulatorApi.MSGS, simController::getRecentMessages);
+        app.get(SimulatorApi.MSGS_USER, simController::getMessagesUser);
 
         return app;
     }

@@ -29,11 +29,40 @@ public class SimulatorController {
     // TODO: THE TWO ENDPOINTS BELOW ARE REQUIRED FOR THE SIMULATOR TO WORK. DON'T
     // FORGET TO INSTANTIATE THEM IN APP.JAVA
     public void getRecentMessages(Context ctx) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        updateLatest(ctx);
+
+        String authHeader = ctx.header("Authorization");
+        if (authHeader == null || !authHeader.equals("Basic c2ltdWxhdG9yOnN1cGVyX3NhZmUh")) {
+            ctx.status(403).json(new ErrorResponse(403, "Unauthorized - Must include correct Authorization header"));
+            return;
+        }
+
+        int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
+
+        
+        ctx.json(messageService.getRecentMessages(limit));
+
     }
 
     public void getMessagesUser(Context ctx) {
-        throw new UnsupportedOperationException("Not implemented yet");
+        updateLatest(ctx);
+
+        String authHeader = ctx.header("Authorization");
+        if (authHeader == null || !authHeader.equals("Basic c2ltdWxhdG9yOnN1cGVyX3NhZmUh")) {
+            ctx.status(403).json(new ErrorResponse(403, "Unauthorized - Must include correct Authorization header"));
+            return;
+        }
+
+        String username = ctx.pathParam("username");
+        int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
+
+        Integer userId = userService.getUserIdByUsername(username);
+        if (userId == null) {
+            ctx.status(404);
+            return;
+        }
+
+        ctx.json(messageService.getMessagesForUser(username, limit));
     }
 
     // @formatter:off

@@ -3,7 +3,6 @@ package zerodowntime.controller.web;
 import java.util.Map;
 
 import io.javalin.http.Context;
-import io.javalin.http.UnauthorizedResponse;
 import zerodowntime.dto.web.MessageRequest;
 import zerodowntime.dto.web.MessageView;
 import zerodowntime.dto.web.UserProfileData;

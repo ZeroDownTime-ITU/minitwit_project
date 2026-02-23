@@ -1,0 +1,10 @@
+services:
+  java-backend:
+    image: corby7/minitwitimage:latest
+    ports:
+      - "7070:7070"
+
+  svelte-frontend:
+    image: corby7/svelteimage:latest
+    ports:
+      - "80:80"

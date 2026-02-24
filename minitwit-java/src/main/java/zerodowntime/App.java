@@ -10,6 +10,7 @@ import zerodowntime.controller.simulator.SimulatorController;
 import zerodowntime.controller.web.AuthController;
 import zerodowntime.controller.web.TimelineController;
 import zerodowntime.controller.web.UserController;
+import zerodowntime.dto.simulator.ErrorResponse;
 import zerodowntime.repository.FollowerRepository;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
@@ -46,6 +47,11 @@ public class App {
                 swaggerConfig.setUiPath("/swagger");
                 swaggerConfig.setDocumentationPath("/openapi");
             }));
+        });
+
+        // Catch unhandled exceptions
+        app.exception(Exception.class, (e, ctx) -> {
+            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         });
 
         // Create repositories

@@ -1,27 +1,29 @@
 services:
   java-backend:
-    build: .
+    build: ./minitwit-java
     ports:
       - "7070:7070"
       - "5005:5005" # Open port for debugging
     volumes:
-      - ./data:/app/data # Map project's data folder to container
+      - ./minitwit-java/data:/app/data # Map project's data folder to container
     environment:
       - DB_FILE=data/minitwit-java.db
       - JAVA_TOOL_OPTIONS=-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005 # For attaching VSCode debugger
 
   svelte-frontend:
-    build: ../minitwit-svelte
+    build:
+      context: ./minitwit-svelte
+      dockerfile: Dockerfile.dev
     ports:
       - "5173:5173"
     volumes:
-      - ../minitwit-svelte:/app
+      - ./minitwit-svelte:/app
       - /app/node_modules
       - /app/.svelte-kit
     command: npm run dev -- --host 0.0.0.0  
     environment:
       - NODE_ENV=development
-      # - CHOKIDAR_USEPOLLING=1 // Enable polling to make hot reload work for Svelte
-      # - CHOKIDAR_INTERVAL=100
+      - CHOKIDAR_USEPOLLING=1 # Enable polling to make hot reload work for Svelte
+      - CHOKIDAR_INTERVAL=100
     depends_on:
       - java-backend

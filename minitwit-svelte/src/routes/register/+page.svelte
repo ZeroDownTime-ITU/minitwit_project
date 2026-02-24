@@ -1,16 +1,13 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { flashes } from '$lib/stores';
+    import PageWrapper from '$lib/components/PageWrapper.svelte';
+    import SignupForm from '$lib/components/SignupForm.svelte';
+    import { toast } from 'svelte-sonner';
 
-    let username = $state('');
-    let email = $state('');
-    let password = $state('');
-    let passwordConfirm = $state('');
     let error = $state<string | null>(null);
     let loading = $state(false);
 
-    async function handleRegister(event: Event) {
-        event.preventDefault(); // Stop the browser from reloading the page
+    async function handleRegister(username: string, email: string, password: string, passwordConfirm: string) {
         loading = true;
         error = null;
 
@@ -22,7 +19,7 @@
             });
 
             if (response.ok) {
-                flashes.set(["You were successfully registered"]);
+                toast.success("You were successfully registered");
                 goto('/login'); 
             } else {
                 const data = await response.json();
@@ -40,27 +37,10 @@
     <title>Sign Up | MiniTwit</title>
 </svelte:head>
 
-<h2>Sign Up</h2>
-
 {#if error}
     <div class="error"><strong>Error:</strong> {error}</div>
 {/if}
 
-<form onsubmit={handleRegister}>
-    <dl>
-        <dt>Username:</dt>
-        <dd><input type="text" bind:value={username} size="30" disabled={loading}></dd>
-
-        <dt>E-Mail:</dt>
-        <dd><input type="text" bind:value={email} size="30" disabled={loading}></dd>
-        
-        <dt>Password:</dt>
-        <dd><input type="password" bind:value={password} size="30" disabled={loading}></dd>
-
-        <dt>Password <small>(repeat)</small>:</dt>
-        <dd><input type="password" bind:value={passwordConfirm} size="30" disabled={loading}></dd>
-    </dl>
-    <div class="actions">
-        <input type="submit" value={loading ? "Signing up..." : "Sign Up"} disabled={loading}>
-    </div>
-</form>
+<PageWrapper>
+    <SignupForm onregister={handleRegister} {error} {loading} />
+</PageWrapper>

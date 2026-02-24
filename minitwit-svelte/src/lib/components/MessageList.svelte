@@ -5,9 +5,9 @@
     let { messages }: { messages: Message[] } = $props();
 </script>
 
-<ul class="messages">
-    {#each messages as msg}
-        <MessageComponent {msg} />
+<ul class="flex flex-col gap-4">
+    {#each messages as msg, i}
+        <MessageComponent {msg} isLast={i === messages.length - 1} />
     {:else}
         <li><em>There's no message so far.</em></li>
     {/each}

@@ -1,14 +1,14 @@
 <script lang="ts">
     import { goto } from '$app/navigation';
-    import { user, flashes } from '$lib/stores';
+    import { user } from '$lib/stores';
+    import LoginForm from "$lib/components/LoginForm.svelte";
+    import PageWrapper from '$lib/components/PageWrapper.svelte';
+    import { toast } from 'svelte-sonner';
 
-    let username = $state('');
-    let password = $state('');
     let error = $state<string | null>(null);
     let loading = $state(false);
 
-    async function handleLogin(event: Event) {
-        event.preventDefault(); // Stop the browser from reloading the page
+    async function handleLogin(username: string, password: string) {
         loading = true;
         error = null;
 
@@ -21,11 +21,9 @@
 
             if (response.ok) {
                 const loggedInUser = await response.json();
-                
-                user.set(loggedInUser); 
-                flashes.set(["You were logged in"]);
-
-                goto('/'); 
+                user.set(loggedInUser);
+                toast.success("You were logged in");
+                goto('/');
             } else {
                 const data = await response.json();
                 error = data.error || "Invalid username or password";
@@ -39,24 +37,9 @@
 </script>
 
 <svelte:head>
-    <title>Sign In | MiniTwit</title>
+	<title>Login | MiniTwit</title>
 </svelte:head>
 
-<h2>Sign In</h2>
-
-{#if error}
-    <div class="error"><strong>Error:</strong> {error}</div>
-{/if}
-
-<form onsubmit={handleLogin}>
-    <dl>
-        <dt>Username:</dt>
-        <dd><input type="text" bind:value={username} size="30" disabled={loading}></dd>
-        
-        <dt>Password:</dt>
-        <dd><input type="password" bind:value={password} size="30" disabled={loading}></dd>
-    </dl>
-    <div class="actions">
-        <input type="submit" value={loading ? "Signing in..." : "Sign In"} disabled={loading}>
-    </div>
-</form>
+<PageWrapper>
+    <LoginForm onlogin={handleLogin} {error} {loading} />
+</PageWrapper>

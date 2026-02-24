@@ -31,11 +31,11 @@
 	}
 
 	const bgStyle = `
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 7h.01'/%3E%3Cpath d='M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20'/%3E%3Cpath d='m20 7 2 .5-2 .5'/%3E%3Cpath d='M10 18v3'/%3E%3Cpath d='M14 17.75V21'/%3E%3Cpath d='M7 18a6 6 0 0 0 3.84-10.61'/%3E%3C/svg%3E");
-    background-size: 128px 64px;
-    background-repeat: repeat-x;
-    background-position: 0px 400px;
-`;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M16 7h.01'/%3E%3Cpath d='M3.4 18H12a8 8 0 0 0 8-8V7a4 4 0 0 0-7.28-2.3L2 20'/%3E%3Cpath d='m20 7 2 .5-2 .5'/%3E%3Cpath d='M10 18v3'/%3E%3Cpath d='M14 17.75V21'/%3E%3Cpath d='M7 18a6 6 0 0 0 3.84-10.61'/%3E%3C/svg%3E");
+		background-size: 128px 64px;
+		background-repeat: repeat-x;
+		background-position: 0px 400px;
+	`;
 </script>
 
 <div class={cn("flex flex-col gap-6", className)} {...restProps}>
@@ -82,8 +82,7 @@
 					</Field.Description>
 				</Field.Group>
 			</form>
-			<div class="relative hidden md:flex bg-[#1DA1F2]" style={bgStyle}>
-</div>
+			<div class="relative hidden md:flex bg-[#1DA1F2]" style={bgStyle}></div>
 		</Card.Content>
 	</Card.Root>
 </div>

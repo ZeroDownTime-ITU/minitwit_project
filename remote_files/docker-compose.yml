@@ -1,10 +1,18 @@
 services:
   java-backend:
-    image: corby7/minitwitimage:latest
+    image: corby7/minitwit-java:latest
     ports:
       - "7070:7070"
+    networks:
+      - app-network
 
   svelte-frontend:
-    image: corby7/svelteimage:latest
+    image: corby7/minitwit-svelte:latest
     ports:
-      - "80:80"
+      - "127.0.0.1:3000:80"
+    networks:
+      - app-network
+
+networks:
+  app-network:
+    driver: bridge

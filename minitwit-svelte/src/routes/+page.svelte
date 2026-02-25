@@ -1,28 +1,20 @@
 <script lang="ts">
-    import { onMount } from 'svelte';
     import { user } from '$lib/stores';
-    import { goto } from '$app/navigation';
-    import MessageList from '$lib/components/MessageList.svelte';
-    import type { Message } from '$lib/types';
+    import Timeline from '$lib/components/Timeline.svelte';
+    import * as Card from "$lib/components/ui/card/index.js";
+    import { Textarea } from "$lib/components/ui/textarea/index.js";
+    import { Button } from "$lib/components/ui/button/index.js";
+    import Separator from '$lib/components/ui/separator/separator.svelte';
+    import PageWrapper from '$lib/components/PageWrapper.svelte';
+    import Message from '$lib/components/Message.svelte';
 
-    let messages = $state<Message[]>([]);
+    let { data } = $props();
+    
+    let localMessages = $state<any[]>([]);
     let newMessageText = $state("");
-
-    onMount(async () => {
-        if (!$user) {
-            goto('/public');
-            return;
-        }
-
-        const response = await fetch('/api/user-timeline');
-        if (response.ok) {
-            messages = await response.json();
-        }
-    });
 
     async function postMessage(event: Event) {
         event.preventDefault();
-        
         const response = await fetch('/api/add-message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -31,24 +23,49 @@
 
         if (response.ok) {
             const newMessage = await response.json();
-            messages = [newMessage, ...messages];
-            newMessageText = ""; // Clear the input field after posting
+            localMessages = [newMessage, ...localMessages];
+            newMessageText = "";
         }
     }
 </script>
 
-<h2>My Timeline</h2>
+<PageWrapper>
+    <Card.Root class="overflow-hidden p-0">
+        <Card.Content class="p-0">
+            <div class="flex flex-col gap-4 p-6 md:p-8">
+                <h1 class="text-2xl font-bold">My timeline</h1>
+                
+                {#if $user}
+                    <div class="flex flex-col gap-3">
+                        <h2 class="text-sm font-medium text-muted-foreground">
+                            What's on your mind, {$user.username}?
+                        </h2>
+                        <form onsubmit={postMessage} class="flex flex-col gap-3">
+                            <Textarea 
+                                bind:value={newMessageText} 
+                                placeholder="Share something..." 
+                                rows={3}
+                                onkeydown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        if (newMessageText.trim()) postMessage(e);
+                                    }
+                                }}
+                            />
+                            <div class="flex justify-end">
+                                <Button type="submit" disabled={!newMessageText.trim()}>Share</Button>
+                            </div>
+                        </form>
+                    </div>
+                    <Separator/>
+                {/if}
 
-{#if $user}
-    <div class="twitbox">
-        <h3>What's on your mind {$user.username}?</h3>
-        <form onsubmit={postMessage}>
-            <p>
-                <input type="text" bind:value={newMessageText} size="60"><!--
-                --><input type="submit" value="Share">
-            </p>
-        </form>
-    </div>
-{/if}
+                {#each localMessages as msg, i}
+                    <Message {msg} isLast={i === localMessages.length - 1} />
+                {/each}
 
-<MessageList {messages} />
+                <Timeline messages={data.messages} />
+            </div>
+        </Card.Content>
+    </Card.Root>
+</PageWrapper>

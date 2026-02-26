@@ -1,6 +1,11 @@
-source ~/.bash_profile
+#!/bin/bash
+
+echo "Deploying latest images..."
 
 cd /minitwit
 
-docker compose -f docker-compose.yml pull
-docker compose -f docker-compose.yml up -d
+docker-compose down --remove-orphans
+docker-compose pull
+docker-compose up -d
+
+echo "Deploy complete!"

@@ -1,13 +1,13 @@
 services:
   java-backend:
-    image: despotheanimal/minitwit-java:latest
+    image: despotheanimal/minitwit-java:${VERSION}
     ports:
       - "7070:7070"
     networks:
       - app-network
 
   svelte-frontend:
-    image: despotheanimal/minitwit-svelte:latest
+    image: despotheanimal/minitwit-svelte:${VERSION}
     ports:
       - "127.0.0.1:3000:80"
     networks:

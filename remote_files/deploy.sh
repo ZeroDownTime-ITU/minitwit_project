@@ -1,11 +1,14 @@
 #!/bin/bash
+set -e
 
-echo "Deploying latest images..."
+echo "Deploying version ${VERSION}..."
 
 cd /minitwit
 
-docker-compose down --remove-orphans
+echo "VERSION=${VERSION}" > .env
+
 docker-compose pull
+docker-compose down --remove-orphans
 docker-compose up -d
 
-echo "Deploy complete!"
+echo "Deploy complete! Running version ${VERSION}"

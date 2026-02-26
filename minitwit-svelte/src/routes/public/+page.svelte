@@ -7,7 +7,7 @@
 </script>
 
 <svelte:head>
-	<title>Public Timeline test | MiniTwit</title>
+	<title>Public Timeline | MiniTwit</title>
 </svelte:head>
 
 <PageWrapper>

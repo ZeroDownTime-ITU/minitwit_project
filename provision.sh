@@ -57,3 +57,5 @@ certbot --nginx -d zerodt.live -d www.zerodt.live \
 echo "Provisioning complete!"
 
 echo "cd /minitwit" >> /root/.bashrc
+
+chmod +x /minitwit/deploy.sh

@@ -3,6 +3,8 @@ services:
     image: despotheanimal/minitwit-java:${VERSION}
     ports:
       - "7070:7070"
+    volumes:
+      - /mnt/volume_fra1_01:/app/data
     networks:
       - app-network
 

@@ -11,6 +11,13 @@ curl -X POST \
   -d "{\"type\":\"assign\",\"droplet_id\":$DROPLET_ID}" \
   "https://api.digitalocean.com/v2/reserved_ips/46.101.70.51/actions"
 
+# Mount DO db volume to our droplet 
+mkdir -p /mnt/volume_fra1_01; 
+mount -o discard,defaults /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01; 
+echo /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01 ext4 defaults,nofail,discard 0 0 | 
+sudo tee -a /etc/fstab
+
+
 # Wait for cloud-init to finish holding apt
 echo "Waiting for apt lock to be released..."
 while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do

@@ -34,3 +34,6 @@ vagrant.log
 
 # devcontainer for ymar
 .devcontainer/
+
+# Mac-OS stuff 
+.DS_Store

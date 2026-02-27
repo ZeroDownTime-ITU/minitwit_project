@@ -3,7 +3,7 @@
 
 Vagrant.configure("2") do |config|
   config.vm.box = 'digital_ocean'
-  config.ssh.private_key_path = '~/.ssh/do_ssh_key'
+  config.ssh.private_key_path = '~/.ssh/id_ed25519'
 
   config.vm.define "minitwit" do |minitwit|
     minitwit.vm.synced_folder "./remote_files", "/minitwit", type: "rsync"
@@ -14,7 +14,7 @@ Vagrant.configure("2") do |config|
       override.vm.allowed_synced_folder_types = :rsync
 
       provider.monitoring = true
-      provider.token = ENV["DIGITAL_OCEAN_TOKEN"]
+      provider.token = ENV["DIGITAL_OCEAN_KEY"]
       provider.ssh_key_name = ENV["SSH_KEY_NAME"] 
       provider.image = "ubuntu-22-04-x64"
       provider.region = "fra1"
@@ -23,7 +23,7 @@ Vagrant.configure("2") do |config|
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
-      "DIGITAL_OCEAN_TOKEN" => ENV["DIGITAL_OCEAN_TOKEN"]
+      "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"]
     }
   end
 end

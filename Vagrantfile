@@ -20,6 +20,9 @@ Vagrant.configure("2") do |config|
       provider.region = "fra1"
       provider.size = "s-1vcpu-1gb"
       provider.setup = false 
+      provider.volumes = [
+        "59c8825b-13df-11f1-9b32-0a58ac12e5cc"
+      ]
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {

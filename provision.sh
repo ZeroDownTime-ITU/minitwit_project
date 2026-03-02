@@ -2,30 +2,21 @@
 
 echo "Starting provision..."
 
-# 1. Assign reserved IP
+# Install doctl
+curl -sL https://github.com/digitalocean/doctl/releases/download/v1.104.0/doctl-1.104.0-linux-amd64.tar.gz | tar -xzv
+mv doctl /usr/local/bin
+
+export DO_TOKEN=$DIGITAL_OCEAN_KEY 
+
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
+# Use --access-token flag to keep it non-interactive
+doctl compute reserved-ip-action assign 46.101.70.51 $DROPLET_ID --access-token $DO_TOKEN || echo "IP already assigned"
 
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $DIGITAL_OCEAN_TOKEN" \
-  -d "{\"type\":\"assign\",\"droplet_id\":$DROPLET_ID}" \
-  "https://api.digitalocean.com/v2/reserved_ips/46.101.70.51/actions"
-
-# Mount DO db volume to our droplet 
-mkdir -p /mnt/volume_fra1_01; 
-mount -o discard,defaults /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01; 
-echo /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01 ext4 defaults,nofail,discard 0 0 | 
-sudo tee -a /etc/fstab
-
-
-# Wait for cloud-init to finish holding apt
-echo "Waiting for apt lock to be released..."
-while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do
-    sleep 5
-done
-
-# 2. Update and Install Dependencies
 sudo apt-get update
+
+# The following address an issue in DO's Ubuntu images, which still contain a lock file
+sudo killall apt apt-get
+sudo rm /var/lib/dpkg/lock-frontend
 
 sudo apt-get install -y docker.io docker-compose nginx certbot python3-certbot-nginx
 
@@ -60,6 +51,10 @@ certbot --nginx -d zerodt.live -d www.zerodt.live \
   --agree-tos \
   --email your@email.com \
   --redirect
+
+# Force Nginx to use HTTP/2: this finds the 'listen 443 ssl' line Certbot just made and adds 'http2' to it
+sudo sed -i 's/listen 443 ssl;/listen 443 ssl http2;/g' /etc/nginx/sites-available/minitwit
+sudo systemctl reload nginx
 
 echo "Provisioning complete!"
 

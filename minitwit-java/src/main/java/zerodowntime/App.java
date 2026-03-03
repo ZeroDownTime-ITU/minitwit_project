@@ -21,8 +21,7 @@ import zerodowntime.service.UserService;
 
 public class App {
     public static void main(String[] args) {
-        // Create production database (auto-initializes if needed)
-        Jdbi jdbi = DatabaseManager.createDatabase("jdbc:sqlite:data/minitwit-java.db");
+        Jdbi jdbi = DatabaseManager.createDatabase();
 
         // Start server
         createApp(jdbi).start("0.0.0.0", 7070);

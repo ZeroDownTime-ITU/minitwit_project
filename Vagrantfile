@@ -26,7 +26,9 @@ Vagrant.configure("2") do |config|
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
-      "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"]
+      "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
+      "RESERVED_IP"       => "46.101.70.51",
+      "DOMAIN"            => "zerodt.live"
     }
   end
 end

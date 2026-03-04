@@ -2,6 +2,7 @@ package zerodowntime;
 
 import org.jdbi.v3.core.Jdbi;
 import io.javalin.Javalin;
+import static io.javalin.apibuilder.ApiBuilder.*;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import zerodowntime.constants.AppConstants.PublicApi;
@@ -22,37 +23,11 @@ import zerodowntime.service.UserService;
 public class App {
     public static void main(String[] args) {
         Jdbi jdbi = DatabaseManager.createDatabase();
-
-        // Start server
         createApp(jdbi).start("0.0.0.0", 7070);
-
         System.out.println("Server started on http://0.0.0.0:7070");
     }
 
     public static Javalin createApp(Jdbi jdbi) {
-        Javalin app = Javalin.create(config -> {
-            // 1. Configure OpenAPI (The generation)
-            config.registerPlugin(new OpenApiPlugin(openApiConfig -> {
-                openApiConfig.withDefinitionConfiguration((version, definition) -> {
-                    definition.withInfo(info -> {
-                        info.setTitle("Minitwit API");
-                        info.setVersion("1.0.0");
-                    });
-                });
-            }));
-
-            // 2. Configure Swagger (The UI)
-            config.registerPlugin(new SwaggerPlugin(swaggerConfig -> {
-                swaggerConfig.setUiPath("/swagger");
-                swaggerConfig.setDocumentationPath("/openapi");
-            }));
-        });
-
-        // Catch unhandled exceptions
-        app.exception(Exception.class, (e, ctx) -> {
-            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
-        });
-
         // Create repositories
         UserRepository userRepo = jdbi.onDemand(UserRepository.class);
         MessageRepository messageRepo = jdbi.onDemand(MessageRepository.class);
@@ -70,42 +45,60 @@ public class App {
         UserController userController = new UserController(userService, messageService);
         SimulatorController simController = new SimulatorController(authService, userService, messageService);
 
-        app.before("/api/*", ctx -> {
-            Integer userId = ctx.sessionAttribute("user_id");
-            if (userId != null) {
-                userRepo.findById(userId).ifPresent(user -> {
-                    ctx.attribute("user", user);
+        Javalin app = Javalin.create(config -> {
+            config.registerPlugin(new OpenApiPlugin(openApi -> {
+                openApi.withDefinitionConfiguration((version, builder) -> {
+                    builder.info(info -> info.title("Minitwit API").version("1.0.0"));
                 });
-            }
+            }));
+
+            config.registerPlugin(new SwaggerPlugin(swagger -> {
+                swagger.withUiPath("/swagger");
+                swagger.withDocumentationPath("/openapi");
+            }));
+
+            config.concurrency.useVirtualThreads = true;
+
+            config.routes.before("/api/*", ctx -> {
+                Integer userId = ctx.sessionAttribute("user_id");
+                if (userId != null) {
+                    userRepo.findById(userId).ifPresent(user -> ctx.attribute("user", user));
+                }
+            });
+
+            config.routes.exception(Exception.class, (e, ctx) -> {
+                ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
+            });
+
+            config.routes.apiBuilder(() -> {
+                // ============ WEB APP ROUTES ============
+
+                // Auth
+                post(PublicApi.LOGIN, authController::handleLogin);
+                post(PublicApi.REGISTER, authController::handleRegister);
+                post(PublicApi.LOGOUT, authController::handleLogout);
+                get(PublicApi.SESSION, authController::getSession);
+
+                // Timeline
+                get(PublicApi.USER_TIMELINE, timelineController::getUserTimeline);
+                get(PublicApi.PUBLIC_TIMELINE, timelineController::getPublicTimeline);
+
+                // User
+                get(PublicApi.USER_PROFILE, userController::getUserProfile);
+                post(PublicApi.POSTMESSAGE, userController::handlePostMessage);
+                post(PublicApi.FOLLOW, userController::handleFollow);
+                post(PublicApi.UNFOLLOW, userController::handleUnfollow);
+
+                // ============ SIMULATOR API ROUTES ============
+                post(SimulatorApi.REGISTER, simController::postRegister);
+                get(SimulatorApi.LATEST, simController::getLatest);
+                post(SimulatorApi.MSGS_USER, simController::postMessage);
+                get(SimulatorApi.FLLWS_USER, simController::getFollowers);
+                post(SimulatorApi.FLLWS_USER, simController::postFollow);
+                get(SimulatorApi.MSGS, simController::getRecentMessages);
+                get(SimulatorApi.MSGS_USER, simController::getMessagesUser);
+            });
         });
-
-        // ============ WEB APP ROUTES ============
-
-        // Auth
-        app.post(PublicApi.LOGIN, authController::handleLogin);
-        app.post(PublicApi.REGISTER, authController::handleRegister);
-        app.post(PublicApi.LOGOUT, authController::handleLogout);
-        app.get(PublicApi.SESSION, authController::getSession);
-
-        // Timeline
-        app.get(PublicApi.USER_TIMELINE, timelineController::getUserTimeline);
-        app.get(PublicApi.PUBLIC_TIMELINE, timelineController::getPublicTimeline);
-
-        // User
-        app.get(PublicApi.USER_PROFILE, userController::getUserProfile);
-        app.post(PublicApi.POSTMESSAGE, userController::handlePostMessage);
-        app.post(PublicApi.FOLLOW, userController::handleFollow);
-        app.post(PublicApi.UNFOLLOW, userController::handleUnfollow);
-
-        // ============ SIMULATOR API ROUTES ============
-
-        app.post(SimulatorApi.REGISTER, simController::postRegister);
-        app.get(SimulatorApi.LATEST, simController::getLatest);
-        app.post(SimulatorApi.MSGS_USER, simController::postMessage);
-        app.get(SimulatorApi.FLLWS_USER, simController::getFollowers);
-        app.post(SimulatorApi.FLLWS_USER, simController::postFollow);
-        app.get(SimulatorApi.MSGS, simController::getRecentMessages);
-        app.get(SimulatorApi.MSGS_USER, simController::getMessagesUser);
 
         return app;
     }

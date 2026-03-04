@@ -2,14 +2,14 @@
 
 echo "Starting provision..."
 
-# 1. Assign reserved IP
+# Install doctl
+curl -sL https://github.com/digitalocean/doctl/releases/download/v1.104.0/doctl-1.104.0-linux-amd64.tar.gz | tar -xzv
+mv doctl /usr/local/bin
+ 
+# Assign reserved IP
 DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
-
-curl -X POST \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer $DIGITAL_OCEAN_TOKEN" \
-  -d "{\"type\":\"assign\",\"droplet_id\":$DROPLET_ID}" \
-  "https://api.digitalocean.com/v2/reserved_ips/46.101.70.51/actions"
+doctl auth init --access-token $DIGITAL_OCEAN_KEY
+doctl compute reserved-ip-action assign 46.101.70.51 $DROPLET_ID
 
 # Wait for cloud-init to finish holding apt
 echo "Waiting for apt lock to be released..."
@@ -19,7 +19,7 @@ done
 
 # 2. Update and Install Dependencies
 sudo apt-get update
-
+sleep 5
 sudo apt-get install -y docker.io docker-compose nginx certbot python3-certbot-nginx
 
 # 3. Setup Docker permissions

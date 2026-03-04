@@ -21,4 +21,6 @@
     <p class="text-destructive text-sm">Failed to load: {error.message}</p>
 {/await}
 
-<TimelinePagination total={total} page={page}/>
+{#if total > 30}
+    <TimelinePagination total={total} page={page}/>
+{/if}

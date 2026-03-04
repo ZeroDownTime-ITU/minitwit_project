@@ -64,7 +64,7 @@
                     <Message {msg} isLast={i === localMessages.length - 1} />
                 {/each}
 
-                <Timeline messages={data.messages} />
+                <Timeline messages={data.messages} total={data.total} page={data.page} />            
             </div>
         </Card.Content>
     </Card.Root>

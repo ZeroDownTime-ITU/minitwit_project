@@ -39,6 +39,9 @@ done
 sudo apt-get install -y docker.io docker-compose
 sudo usermod -aG docker root
 
+# THIS KEEPS THE FILE SECURED
+sudo chmod 600 /minitwit/.env
+
 # 4. SET UP NGINX WITH HTTP CONFIG
 cp /minitwit/nginx-http.conf /minitwit/nginx.conf
 

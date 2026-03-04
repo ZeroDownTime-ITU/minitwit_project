@@ -28,7 +28,7 @@ public interface MessageRepository {
             @Bind("limit") int limit,
             @Bind("offset") int offset);
 
-    @SqlQuery("SELECT COUNT(*) FROM message m JOIN user u ON m.author_id = u.user_id " +
+    @SqlQuery("SELECT COUNT(*) FROM message m JOIN users u ON m.author_id = u.user_id " +
             "WHERE m.flagged = 0 AND (u.user_id = :userId OR " +
             "u.user_id IN (SELECT whom_id FROM follower WHERE who_id = :userId))")
     int getUserTimelineCount(@Bind("userId") int userId);

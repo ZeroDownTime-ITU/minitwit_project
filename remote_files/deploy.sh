@@ -5,10 +5,15 @@ echo "Deploying version ${VERSION}..."
 
 cd /minitwit
 
-echo "VERSION=${VERSION}" > .env
+# Update VERSION in .env if it exists, otherwise append it
+if grep -q "^VERSION=" .env 2>/dev/null; then
+  sed -i "s/^VERSION=.*/VERSION=${VERSION}/" .env
+else
+  echo "VERSION=${VERSION}" >> .env
+fi
 
+docker-compose down --remove-orphans
 docker-compose pull
-docker-compose up -d --no-deps java-backend svelte-frontend # Keep DB running
-docker-compose exec -T nginx nginx -s reload # Refresh Nginx's IP table
+docker-compose up -d
 
 echo "Deploy complete! Running version ${VERSION}"

@@ -37,10 +37,6 @@
     <title>Sign Up | MiniTwit</title>
 </svelte:head>
 
-{#if error}
-    <div class="error"><strong>Error:</strong> {error}</div>
-{/if}
-
 <PageWrapper>
     <SignupForm onregister={handleRegister} {error} {loading} />
 </PageWrapper>

@@ -35,7 +35,7 @@ public class MessageService {
     }
 
     public List<Message> getRecentMessages(int limit) {
-        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessages(limit);
+        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessagesPaged(limit, 0);
 
         return rawMessages.stream()
                 .map(m -> new Message(

@@ -7,7 +7,7 @@ import java.util.List;
 
 public interface FollowerRepository {
 
-    @SqlUpdate("INSERT OR IGNORE INTO follower (who_id, whom_id) VALUES (:whoId, :whomId)")
+    @SqlUpdate("INSERT INTO follower (who_id, whom_id) VALUES (:whoId, :whomId) ON CONFLICT DO NOTHING")
     int followUser(
             @Bind("whoId") int whoId,
             @Bind("whomId") int whomId);
@@ -24,9 +24,9 @@ public interface FollowerRepository {
 
     @SqlQuery("""
                 SELECT u_whom.username
-                FROM user u_who
+                FROM users u_who
                 JOIN follower f ON f.who_id = u_who.user_id
-                JOIN user u_whom ON f.whom_id = u_whom.user_id
+                JOIN users u_whom ON f.whom_id = u_whom.user_id
                 WHERE u_who.username = :username
                 LIMIT :limit
             """)

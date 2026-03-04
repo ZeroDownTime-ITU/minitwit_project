@@ -6,11 +6,10 @@
     import { Button } from "$lib/components/ui/button/index.js";
     import Separator from '$lib/components/ui/separator/separator.svelte';
     import PageWrapper from '$lib/components/PageWrapper.svelte';
-    import Message from '$lib/components/Message.svelte';
+    import { invalidateAll } from '$app/navigation';
 
     let { data } = $props();
     
-    let localMessages = $state<any[]>([]);
     let newMessageText = $state("");
 
     async function postMessage(event: Event) {
@@ -21,10 +20,9 @@
             body: JSON.stringify({ text: newMessageText })
         });
 
-        if (response.ok) {
-            const newMessage = await response.json();
-            localMessages = [newMessage, ...localMessages];
+       if (response.ok) {
             newMessageText = "";
+            await invalidateAll();
         }
     }
 </script>
@@ -59,10 +57,6 @@
                     </div>
                     <Separator/>
                 {/if}
-
-                {#each localMessages as msg, i}
-                    <Message {msg} isLast={i === localMessages.length - 1} />
-                {/each}
 
                 <Timeline messages={data.messages} />
             </div>

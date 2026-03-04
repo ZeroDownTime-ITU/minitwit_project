@@ -1,3 +1,6 @@
+# Secrets
+.env
+
 # Old python minitwit
 __pycache__/
 .pytest_cache
@@ -23,6 +26,7 @@ dependency-reduced-pom.xml
 # Database and Logs
 *.db
 *.log
+postgres_data/
 
 # Temp files
 *.lst

@@ -4,7 +4,6 @@ import java.util.List;
 
 import zerodowntime.dto.simulator.Message;
 import zerodowntime.dto.web.MessageDto;
-import zerodowntime.dto.web.MessageView;
 import zerodowntime.model.User;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
@@ -19,19 +18,9 @@ public class MessageService {
         this.userRepository = userRepository;
     }
 
-    public MessageView addMessage(int authorId, String text) {
+    public void addMessage(int authorId, String text) {
         long currentTime = System.currentTimeMillis() / 1000;
         messageRepository.createMessage(authorId, text, currentTime);
-
-        User user = userRepository.findById(authorId)
-                .orElseThrow(() -> new RuntimeException("User not found with ID: " + authorId));
-
-        return new MessageView(
-                user.getUsername(),
-                text,
-                FormatUtils.formatDatetime(currentTime),
-                FormatUtils.getGravatarUrl(user.getEmail(), 48),
-                authorId);
     }
 
     public List<Message> getRecentMessages(int limit) {

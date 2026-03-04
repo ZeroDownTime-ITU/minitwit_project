@@ -4,12 +4,10 @@ import io.javalin.Javalin;
 import okhttp3.*;
 import org.jdbi.v3.core.Jdbi;
 import org.junit.jupiter.api.*;
-import org.junit.jupiter.api.io.TempDir;
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
 
 import java.io.IOException;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -21,19 +19,16 @@ public class MinitwitTest {
     private static final int TEST_PORT = 7071;
     private static final String BASE_URL = "http://localhost:" + TEST_PORT;
 
-    @TempDir
-    Path tempDir;
-
     private Javalin app;
     private OkHttpClient client;
     private TestHelper http;
 
     @BeforeEach
     public void setUp() {
-        String testDbUrl = "jdbc:sqlite:" + tempDir.resolve("test.db");
-        Jdbi testJdbi = DatabaseManager.createDatabase(testDbUrl);
+        Jdbi testJdbi = TestDatabaseManager.createTestDatabase();
 
         app = App.createApp(testJdbi).start(TEST_PORT);
+
         client = createTestClient();
         http = new TestHelper(client, BASE_URL);
     }
@@ -65,7 +60,6 @@ public class MinitwitTest {
 
     @Test
     public void testRegister() throws IOException {
-        // Use actual DTOs!
         RegisterRequest req = new RegisterRequest("user1", "u1@ex.com", "abc", "abc");
 
         try (Response res = http.postJson(PublicApi.REGISTER, req)) {

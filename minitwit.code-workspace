@@ -1,7 +1,6 @@
 {
   "folders": [
-    { "path": "minitwit-java" },
-    { "path": "minitwit-svelte" }
+    { "path": "." }
   ],
   "settings": {},
   "launch": {

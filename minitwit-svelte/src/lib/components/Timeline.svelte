@@ -2,8 +2,9 @@
     import type { Message } from '$lib/types';
     import MessageList from './MessageList.svelte';
     import MessageSkeleton from './MessageSkeleton.svelte';
+    import TimelinePagination from './TimelinePagination.svelte';
 
-   let { messages }: { messages: Promise<Message[]> | Message[] } = $props();
+   let { messages, total, page }: { messages: Promise<Message[]> | Message[]; total: number; page: number } = $props();
 </script>
 
 {#await messages}
@@ -19,3 +20,7 @@
 {:catch error}
     <p class="text-destructive text-sm">Failed to load: {error.message}</p>
 {/await}
+
+{#if total > 30}
+    <TimelinePagination total={total} page={page}/>
+{/if}

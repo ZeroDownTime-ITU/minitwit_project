@@ -58,7 +58,7 @@
                     <Separator/>
                 {/if}
 
-                <Timeline messages={data.messages} />
+                <Timeline messages={data.messages} total={data.total} page={data.page} />            
             </div>
         </Card.Content>
     </Card.Root>

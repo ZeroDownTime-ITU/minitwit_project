@@ -19,7 +19,7 @@
                         <h1 class="text-2xl font-bold">Public timeline</h1>
                     </div>
                 
-                   <Timeline messages={data.messages} />
+                    <Timeline messages={data.messages} total={data.total} page={data.page} />
                 </div>
             </Card.Content>
         </Card.Root>

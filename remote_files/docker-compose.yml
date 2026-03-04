@@ -26,8 +26,8 @@ services:
     depends_on:
       postgres-db:
         condition: service_healthy
-    expose:
-      - "7070"
+    ports:
+      - "7070:7070"
     networks:
       - app-network
 

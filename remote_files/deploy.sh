@@ -12,8 +12,8 @@ else
   echo "VERSION=${VERSION}" >> .env
 fi
 
-docker-compose down --remove-orphans
-docker-compose pull
-docker-compose up -d
+docker-compose stop java-backend svelte-frontend nginx
+docker-compose pull java-backend svelte-frontend
+docker-compose up -d java-backend svelte-frontend nginx
 
 echo "Deploy complete! Running version ${VERSION}"

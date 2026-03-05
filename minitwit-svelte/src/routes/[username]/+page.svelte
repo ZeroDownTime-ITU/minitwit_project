@@ -18,7 +18,7 @@
 
     async function toggleFollow() {
         const action = isFollowed ? 'unfollow' : 'follow';
-        const response = await fetch(`/api/${action}/${username}`, { method: 'POST' });
+        const response = await fetch(`/web/${action}/${username}`, { method: 'POST' });
         if (response.ok) {
             isFollowed = !isFollowed;
             toast.success(`You are ${isFollowed ? 'now following' : 'no longer following'} "${username}"`);

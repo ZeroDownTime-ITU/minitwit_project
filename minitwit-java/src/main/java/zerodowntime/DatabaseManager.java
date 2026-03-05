@@ -2,6 +2,10 @@ package zerodowntime;
 
 import org.jdbi.v3.core.Jdbi;
 import org.jdbi.v3.sqlobject.SqlObjectPlugin;
+
+import com.zaxxer.hikari.HikariConfig;
+import com.zaxxer.hikari.HikariDataSource;
+
 import org.jdbi.v3.postgres.PostgresPlugin;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -9,21 +13,29 @@ import java.nio.charset.StandardCharsets;
 public class DatabaseManager {
 
     public static Jdbi createDatabase() {
-        // Pull variables injected by Docker Compose
         String url = System.getenv("JDBC_URL");
         String user = System.getenv("JDBC_USER");
         String pass = System.getenv("JDBC_PASS");
 
-        if (url == null || user == null || pass == null) {
-            throw new RuntimeException("Database environment variables (JDBC_URL, JDBC_USER, JDBC_PASS) are missing!");
-        }
+        HikariConfig config = new HikariConfig();
+        config.setJdbcUrl(url);
+        config.setUsername(user);
+        config.setPassword(pass);
 
-        Jdbi jdbi = Jdbi.create(url, user, pass);
+        // --- 1 vCPU / 1GB RAM Optimizations ---
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+
+        config.setConnectionTimeout(3000); // Wait 3s max for a connection, then error out
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setMaxLifetime(1800000); // 30 minutes
+
+        HikariDataSource ds = new HikariDataSource(config);
+        Jdbi jdbi = Jdbi.create(ds);
 
         jdbi.installPlugin(new SqlObjectPlugin());
         jdbi.installPlugin(new PostgresPlugin());
 
-        // Initialize tables if they don't exist
         initializeSchema(jdbi);
 
         return jdbi;

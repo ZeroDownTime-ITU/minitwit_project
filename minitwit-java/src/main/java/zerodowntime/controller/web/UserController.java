@@ -4,7 +4,6 @@ import java.util.Map;
 
 import io.javalin.http.Context;
 import zerodowntime.dto.web.MessageRequest;
-import zerodowntime.dto.web.MessageView;
 import zerodowntime.dto.web.UserProfileData;
 import zerodowntime.model.User;
 import zerodowntime.service.MessageService;

@@ -6,7 +6,7 @@ export default defineConfig({
   plugins: [tailwindcss(), sveltekit()],
   server: {
     proxy: {
-      '/api': {
+      '/web': {
         target: 'http://java-backend:7070',
         changeOrigin: true,
       }

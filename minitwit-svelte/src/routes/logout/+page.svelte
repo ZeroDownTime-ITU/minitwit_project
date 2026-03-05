@@ -5,7 +5,7 @@
     import { toast } from 'svelte-sonner';
 
     onMount(async () => {
-        const response = await fetch('/api/auth/logout', { method: 'POST' });
+        const response = await fetch('/web/auth/logout', { method: 'POST' });
 
         if (response.ok) {
             user.set(null);

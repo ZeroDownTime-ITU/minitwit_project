@@ -5,11 +5,15 @@ echo "Deploying version ${VERSION}..."
 
 cd /minitwit
 
-# Not sure what to do about this one? Maybe needs to be deleted 
-echo "VERSION=${VERSION}" > .env
+# Update VERSION in .env if it exists, otherwise append it
+if grep -q "^VERSION=" .env 2>/dev/null; then
+  sed -i "s/^VERSION=.*/VERSION=${VERSION}/" .env
+else
+  echo "VERSION=${VERSION}" >> .env
+fi
 
-docker-compose pull
-docker-compose up -d --no-deps java-backend svelte-frontend # Keep DB running
-docker-compose exec -T nginx nginx -s reload # Refresh Nginx's IP table
+docker-compose stop java-backend svelte-frontend nginx
+docker-compose pull java-backend svelte-frontend
+docker-compose up -d java-backend svelte-frontend nginx
 
 echo "Deploy complete! Running version ${VERSION}"

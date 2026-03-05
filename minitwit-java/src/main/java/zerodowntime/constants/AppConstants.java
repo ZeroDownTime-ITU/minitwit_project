@@ -21,17 +21,17 @@ public class AppConstants {
      * These use session-based authentication.
      */
     public static class PublicApi {
-        public static final String PUBLIC_TIMELINE = "/api/public-timeline";
-        public static final String USER_TIMELINE = "/api/user-timeline";
-        public static final String USER_PROFILE = "/api/user/{username}";
-        public static final String FOLLOW = "/api/follow/{username}";
-        public static final String UNFOLLOW = "/api/unfollow/{username}";
-        public static final String USER_FOLLOWING = "/api/user/{username}/following";
-        public static final String POSTMESSAGE = "/api/add-message";
+        public static final String PUBLIC_TIMELINE = "/web/public-timeline";
+        public static final String USER_TIMELINE = "/web/user-timeline";
+        public static final String USER_PROFILE = "/web/user/{username}";
+        public static final String FOLLOW = "/web/follow/{username}";
+        public static final String UNFOLLOW = "/web/unfollow/{username}";
+        public static final String USER_FOLLOWING = "/web/user/{username}/following";
+        public static final String POSTMESSAGE = "/web/add-message";
 
-        public static final String LOGIN = "/api/auth/login";
-        public static final String LOGOUT = "/api/auth/logout";
-        public static final String REGISTER = "/api/auth/register";
-        public static final String SESSION = "/api/auth/session";
+        public static final String LOGIN = "/web/auth/login";
+        public static final String LOGOUT = "/web/auth/logout";
+        public static final String REGISTER = "/web/auth/register";
+        public static final String SESSION = "/web/auth/session";
     }
 }

@@ -14,7 +14,7 @@
 
     async function postMessage(event: Event) {
         event.preventDefault();
-        const response = await fetch('/api/add-message', {
+        const response = await fetch('/web/add-message', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ text: newMessageText })
@@ -58,7 +58,7 @@
                     <Separator/>
                 {/if}
 
-                <Timeline messages={data.messages} />
+                <Timeline messages={data.messages} total={data.total} page={data.page} />            
             </div>
         </Card.Content>
     </Card.Root>

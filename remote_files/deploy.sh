@@ -5,6 +5,7 @@ echo "Deploying version ${VERSION}..."
 
 cd /minitwit
 
+# Not sure what to do about this one? Maybe needs to be deleted 
 echo "VERSION=${VERSION}" > .env
 
 docker-compose pull

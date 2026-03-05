@@ -26,7 +26,7 @@ Vagrant.configure("2") do |config|
     end
 
     minitwit.vm.provision "file",
-    source: "remote_files/.env"
+    source: "remote_files/.env",
     destination: "/minitwit/.env"
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {

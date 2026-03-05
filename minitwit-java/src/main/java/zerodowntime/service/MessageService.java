@@ -24,7 +24,7 @@ public class MessageService {
     }
 
     public List<Message> getRecentMessages(int limit) {
-        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessagesPaged(limit, 0);
+        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessages(limit, 0);
 
         return rawMessages.stream()
                 .map(m -> new Message(
@@ -38,7 +38,7 @@ public class MessageService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
 
-        List<MessageDto> rawMessages = messageRepository.getMessagesByUserId(user.getUserId(), limit);
+        List<MessageDto> rawMessages = messageRepository.getMessagesByUserId(user.getUserId(), limit, 0);
 
         return rawMessages.stream()
                 .map(m -> new Message(

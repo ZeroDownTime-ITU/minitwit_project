@@ -36,13 +36,13 @@ public class App {
         // Create services
         AuthService authService = new AuthService(userRepo);
         TimelineService timelineService = new TimelineService(messageRepo);
-        UserService userService = new UserService(userRepo, followerRepo, messageRepo);
+        UserService userService = new UserService(userRepo, followerRepo);
         MessageService messageService = new MessageService(messageRepo, userRepo);
 
         // Create controllers
         AuthController authController = new AuthController(authService, userService);
         TimelineController timelineController = new TimelineController(timelineService);
-        UserController userController = new UserController(userService, messageService);
+        UserController userController = new UserController(userService, messageService, timelineService);
         SimulatorController simController = new SimulatorController(authService, userService, messageService);
 
         Javalin app = Javalin.create(config -> {

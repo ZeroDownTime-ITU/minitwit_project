@@ -1,26 +1,32 @@
 package zerodowntime.controller.web;
 
+import java.util.List;
 import java.util.Map;
 
 import io.javalin.http.Context;
 import zerodowntime.dto.web.MessageRequest;
-import zerodowntime.dto.web.UserProfileData;
+import zerodowntime.dto.web.MessageView;
 import zerodowntime.model.User;
 import zerodowntime.service.MessageService;
+import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
 
 public class UserController extends BaseController {
     private UserService userService;
     private MessageService messageService;
+    private TimelineService timelineService;
 
-    public UserController(UserService userService, MessageService messageService) {
+    public UserController(UserService userService, MessageService messageService, TimelineService timelineService) {
         this.userService = userService;
         this.messageService = messageService;
+        this.timelineService = timelineService;
     }
 
     // Display's a user's tweets.
     public void getUserProfile(Context ctx) {
+        int pageOffset = getOffset(getPage(ctx));
         String username = ctx.pathParam("username");
+
         User profileUser = userService.getUserByUsername(username);
         if (profileUser == null) {
             ctx.status(404).json(Map.of("error", "User not found"));
@@ -28,10 +34,16 @@ public class UserController extends BaseController {
         }
 
         Integer currentUserId = ctx.sessionAttribute("user_id");
+        Integer profileUserId = profileUser.getUserId();
 
-        UserProfileData data = userService.getProfileData(profileUser, currentUserId);
+        List<MessageView> profileMessages = timelineService.getProfileMessages(profileUserId, pageOffset);
+        boolean isFollowing = userService.isUserFollowingProfile(currentUserId, profileUserId);
+        int messagesCount = timelineService.countProfileMessages(profileUserId);
 
-        ctx.status(200).json(data);
+        ctx.status(200).json(Map.of(
+                "messages", profileMessages,
+                "following", isFollowing,
+                "total", messagesCount));
     }
 
     // Adds the current user as follower of the given user.

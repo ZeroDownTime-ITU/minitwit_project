@@ -50,6 +50,7 @@ public class App {
 
         // Catch unhandled exceptions
         app.exception(Exception.class, (e, ctx) -> {
+            e.printStackTrace();
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         });
 

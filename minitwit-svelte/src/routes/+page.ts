@@ -14,7 +14,7 @@ export const load: PageLoad = async ({ fetch, url }) => {
 
     const page = Number(url.searchParams.get('page') ?? 0);
 
-    const result = await fetch(`/api/user-timeline?page=${page}`)
+    const result = await fetch(`/web/user-timeline?page=${page}`)
         .then(r => r.ok ? r.json() : { messages: [], total: 0 })
         .catch(() => ({ messages: [], total: 0 }));
 

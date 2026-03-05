@@ -59,12 +59,7 @@ public class App {
 
             config.concurrency.useVirtualThreads = true;
 
-            config.routes.before("/api/*", ctx -> {
-                // 1. Skip DB lookup for simulator routes that don't need userId
-                if (ctx.path().startsWith("/api/msgs") || ctx.path().startsWith("/api/latest")) {
-                    return;
-                }
-
+            config.routes.before("/web/*", ctx -> {
                 Integer userId = ctx.sessionAttribute("user_id");
                 if (userId != null) {
                     userRepo.findById(userId).ifPresent(user -> ctx.attribute("user", user));

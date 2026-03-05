@@ -22,10 +22,13 @@ public class DatabaseManager {
         config.setUsername(user);
         config.setPassword(pass);
 
-        config.setMaximumPoolSize(20);
-        config.setMinimumIdle(5);
-        config.setConnectionTimeout(3000);
-        config.setIdleTimeout(600000);
+        // --- 1 vCPU / 1GB RAM Optimizations ---
+        config.setMaximumPoolSize(10);
+        config.setMinimumIdle(2);
+
+        config.setConnectionTimeout(3000); // Wait 3s max for a connection, then error out
+        config.setIdleTimeout(600000); // 10 minutes
+        config.setMaxLifetime(1800000); // 30 minutes
 
         HikariDataSource ds = new HikariDataSource(config);
         Jdbi jdbi = Jdbi.create(ds);

@@ -36,12 +36,12 @@
             <div class="flex flex-col gap-4 p-6 md:p-8">
                 <h1 class="text-2xl font-bold">{username}'s timeline</h1>
 
-                {#await data.profile}
+                {#await data.messages}
                     <div class="h-10 w-full animate-pulse bg-muted rounded-md"></div>
                 {:then profileData}
                     {#if profileData}
                         {#snippet followButton()}
-                             {@const followed = isFollowed ?? profileData.followed}
+                             {@const followed = isFollowed ?? data.following}
                              <Button 
                                 variant={followed ? 'outline' : 'default'}
                                 size="sm"
@@ -60,7 +60,7 @@
                                 {:else}
                                     <Item.Root variant="outline" size="sm">
                                        <Item.Media>
-                                            {#if isFollowed ?? profileData.followed}
+                                            {#if isFollowed ?? data.following}
                                                 <UserCheck class="size-5 text-[#1DA1F2]" />
                                             {:else}
                                                 <UserX class="size-5 text-[#1DA1F2]" />
@@ -68,7 +68,7 @@
                                         </Item.Media>       
                                         <Item.Content class="flex flex-row justify-between items-center">
                                             <Item.Title>
-                                                You are {isFollowed ?? profileData.followed ? 'currently' : 'not yet'} following this user.
+                                                You are {isFollowed ?? data.following ? 'currently' : 'not yet'} following this user.
                                             </Item.Title>
                                             {@render followButton()}
                                         </Item.Content>
@@ -79,8 +79,7 @@
                     {/if}
                 {/await}
 
-                <Timeline messages={data.profile.then(p => p?.messages ?? [])} />
-            </div>
+            <Timeline messages={data.messages} total={data.total} page={data.page} />            </div>
         </Card.Content>
     </Card.Root>
 </PageWrapper>

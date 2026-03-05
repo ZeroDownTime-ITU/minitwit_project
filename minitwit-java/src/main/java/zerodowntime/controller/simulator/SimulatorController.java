@@ -41,6 +41,8 @@ public class SimulatorController {
         try {
             ctx.json(new LatestValue(latestValue));
         } catch (Exception e) {
+            System.err.println("[getLatest] Error: " + e.getMessage());
+            e.printStackTrace();
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -63,10 +65,15 @@ public class SimulatorController {
     public void getRecentMessages(Context ctx) {
         updateLatest(ctx);
         if (!isAuthorized(ctx)) return;
+        try {
+            int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
-        int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
-
-        ctx.json(messageService.getRecentMessages(limit));
+            ctx.json(messageService.getRecentMessages(limit));
+        } catch (Exception e) {
+            System.err.println("[getRecentMessages] Error: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
+        }
     }
 
     @OpenApi(
@@ -89,14 +96,20 @@ public class SimulatorController {
     public void getMessagesUser(Context ctx) {
         updateLatest(ctx);
         if (!isAuthorized(ctx)) return;
+        try {
+            String username = ctx.pathParam("username");
+            int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
-        String username = ctx.pathParam("username");
-        int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
+            Integer userId = getUserOrAbort(ctx, username);
+            if (userId == null) return;
 
-        Integer userId = getUserOrAbort(ctx, username);
-        if (userId == null) return;
-
-        ctx.json(messageService.getMessagesForUser(username, limit));
+            ctx.json(messageService.getMessagesForUser(username, limit));
+        }
+        catch (Exception e) {
+            System.err.println("[getMessagesUser] Error: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
+        }
     }
 
     @OpenApi(
@@ -119,16 +132,22 @@ public class SimulatorController {
     public void getFollowers(Context ctx) {
         updateLatest(ctx);
         if (!isAuthorized(ctx)) return;
+        try {
+             String username = ctx.pathParam("username");
+            int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
-        String username = ctx.pathParam("username");
-        int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
+            Integer userId = getUserOrAbort(ctx, username);
+            if (userId == null) return;
 
-        Integer userId = getUserOrAbort(ctx, username);
-        if (userId == null) return;
+            List<String> followingNames = userService.getUserFollowing(username, limit);
 
-        List<String> followingNames = userService.getUserFollowing(username, limit);
-
-        ctx.json(new FollowsResponse(followingNames));
+            ctx.json(new FollowsResponse(followingNames));
+        }
+        catch (Exception e) {
+            System.err.println("[getFollowers] Error: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
+        }
     }
 
     @OpenApi(
@@ -152,31 +171,38 @@ public class SimulatorController {
         updateLatest(ctx);
         if (!isAuthorized(ctx)) return;
 
-        String username = ctx.pathParam("username");
-        FollowAction action = ctx.bodyAsClass(FollowAction.class);
+        try {
+            String username = ctx.pathParam("username");
+            FollowAction action = ctx.bodyAsClass(FollowAction.class);
 
-        Integer userId = getUserOrAbort(ctx, username);
-        if (userId == null) return;
+            Integer userId = getUserOrAbort(ctx, username);
+            if (userId == null) return;
 
-        if (action.follow() != null) {
-            Integer userIdToFollow = userService.getUserIdByUsername(action.follow());
-            if (userIdToFollow == null) {
-                ctx.status(404);
-                return;
+            if (action.follow() != null) {
+                Integer userIdToFollow = userService.getUserIdByUsername(action.follow());
+                if (userIdToFollow == null) {
+                    ctx.status(404);
+                    return;
+                }
+
+                userService.followUser(userId, userIdToFollow);
+            } else if (action.unfollow() != null) {
+                Integer userIdToUnfollow = userService.getUserIdByUsername(action.unfollow());
+                if (userIdToUnfollow == null) {
+                    ctx.status(404);
+                    return;
+                }
+
+                userService.unfollowUser(userId, userIdToUnfollow);
             }
 
-            userService.followUser(userId, userIdToFollow);
-        } else if (action.unfollow() != null) {
-            Integer userIdToUnfollow = userService.getUserIdByUsername(action.unfollow());
-            if (userIdToUnfollow == null) {
-                ctx.status(404);
-                return;
-            }
-
-            userService.unfollowUser(userId, userIdToUnfollow);
+            ctx.status(204);
         }
-
-        ctx.status(204);
+        catch (Exception e) {
+            System.err.println("[postFollow] Error: " + e.getMessage());
+            e.printStackTrace();
+            ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
+        }
     }
 
     @OpenApi(
@@ -201,6 +227,8 @@ public class SimulatorController {
             authService.registerUser(request.username(), request.email(), request.pwd());
             ctx.status(204);
         } catch (IllegalArgumentException e) {
+            System.err.println("[postRegister] Error: " + e.getMessage());
+            e.printStackTrace();
             ctx.status(400).json(new ErrorResponse(400, e.getMessage()));
         }
     }
@@ -236,6 +264,8 @@ public class SimulatorController {
 
             ctx.status(204);
         } catch (Exception e) {
+            System.err.println("[postMessage] Error: " + e.getMessage());
+            e.printStackTrace();
             ctx.status(403).json(new ErrorResponse(403, "Could not post message")); // same here, should be 400;
         }
     }
@@ -246,7 +276,7 @@ public class SimulatorController {
             try {
                 latestValue = Integer.parseInt(latestParam);
             } catch (NumberFormatException e) {
-                System.err.println("Invalid 'latest' parameter: " + latestParam);
+                System.err.println("[updateLatest] Invalid 'latest' parameter: " + latestParam);
             }
         }
     }
@@ -254,6 +284,7 @@ public class SimulatorController {
     private boolean isAuthorized(Context ctx) {
         String authHeader = ctx.header("Authorization");
         if (authHeader == null || !authHeader.equals("Basic c2ltdWxhdG9yOnN1cGVyX3NhZmUh")) {
+            System.err.println("[isAuthorized] Unauthorized request from: " + ctx.ip());
             ctx.status(403).json(new ErrorResponse(403, "Unauthorized - Must include correct Authorization header"));
             return false;
         }
@@ -263,6 +294,7 @@ public class SimulatorController {
     private Integer getUserOrAbort(Context ctx, String username) {
         Integer userId = userService.getUserIdByUsername(username);
         if (userId == null) {
+            System.err.println("[getUserOrAbort] User not found: " + username);
             ctx.status(404);
             return null;
         }

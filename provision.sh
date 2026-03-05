@@ -39,6 +39,12 @@ done
 sudo apt-get install -y docker.io docker-compose
 sudo usermod -aG docker root
 
+# EXTRA CHECK TO SEE IF THAT ENV FILE IS THERE (I PRAY)
+if [ ! -f /minitwit.env ]; then 
+    echo "Missing environment file. Copy it brother just as written in the ".env.template" file"
+    exit 1
+fi
+
 # THIS KEEPS THE FILE SECURED
 sudo chmod 600 /minitwit/.env
 

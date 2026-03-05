@@ -67,12 +67,12 @@ public class App {
             });
 
             config.routes.exception(Exception.class, (e, ctx) -> {
+                e.printStackTrace();
                 ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
             });
 
             config.routes.apiBuilder(() -> {
                 // ============ WEB APP ROUTES ============
-
                 // Auth
                 post(PublicApi.LOGIN, authController::handleLogin);
                 post(PublicApi.REGISTER, authController::handleRegister);

@@ -135,7 +135,7 @@ public class SimulatorController {
         updateLatest(ctx);
         if (!isAuthorized(ctx)) return;
         try {
-             String username = ctx.pathParam("username");
+            String username = ctx.pathParam("username");
             int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
             Integer userId = getUserOrAbort(ctx, username);

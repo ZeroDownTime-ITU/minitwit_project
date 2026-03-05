@@ -1,7 +1,7 @@
 import { user } from '$lib/stores';
 
 export async function load({ fetch }) {
-    const response = await fetch('/api/auth/session', {
+    const response = await fetch('/web/auth/session', {
         credentials: 'include'
     });
     

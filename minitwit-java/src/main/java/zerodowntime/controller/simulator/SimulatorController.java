@@ -1,6 +1,8 @@
 package zerodowntime.controller.simulator;
 
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
+
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -19,7 +21,7 @@ public class SimulatorController {
     private UserService userService;
     private MessageService messageService;
 
-    private static Integer latestValue = 0;
+    private static final AtomicInteger latestValue = new AtomicInteger(0);
 
     public SimulatorController(AuthService authService, UserService userService, MessageService messageService) {
         this.authService = authService;
@@ -39,7 +41,7 @@ public class SimulatorController {
     )
     public void getLatest(Context ctx) {
         try {
-            ctx.json(new LatestValue(latestValue));
+            ctx.json(new LatestValue(latestValue.get()));
         } catch (Exception e) {
             System.err.println("[getLatest] Error: " + e.getMessage());
             e.printStackTrace();
@@ -274,7 +276,7 @@ public class SimulatorController {
         String latestParam = ctx.queryParam("latest");
         if (latestParam != null) {
             try {
-                latestValue = Integer.parseInt(latestParam);
+                latestValue.set(Integer.parseInt(latestParam));
             } catch (NumberFormatException e) {
                 System.err.println("[updateLatest] Invalid 'latest' parameter: " + latestParam);
             }

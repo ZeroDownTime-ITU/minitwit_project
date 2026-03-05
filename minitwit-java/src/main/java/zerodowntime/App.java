@@ -67,6 +67,7 @@ public class App {
             });
 
             config.routes.exception(Exception.class, (e, ctx) -> {
+                System.err.println("[unhandled] " + e.getMessage());
                 e.printStackTrace();
                 ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
             });

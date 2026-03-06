@@ -18,19 +18,20 @@ Vagrant.configure("2") do |config|
 
       provider.monitoring = true
       provider.token = ENV["DIGITAL_OCEAN_KEY"]
-      provider.ssh_key_name = ENV["SSH_KEY_NAME"] 
+      provider.ssh_key_name = ENV["SSH_KEY_NAME"]
       provider.image = "ubuntu-22-04-x64"
       provider.region = "fra1"
       provider.size = "s-1vcpu-1gb"
       provider.setup = false 
       provider.volumes = [
-        # Attach the existing volume id to the droplet here between ""
+        "cbaf4805-1639-11f1-a59c-0a58ac12ea84" # Change this to your own volume ID, which can be found by running 
+          # curl -X GET "https://api.digitalocean.com/v2/volumes" \ -H "Authorization: Bearer $DIGITAL_OCEAN_KEY"
       ]
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
-      "RESERVED_IP"       => #ENV["RESERVED_IP"],
+      "RESERVED_IP"       => "129.212.140.147",
     }
   end
 end

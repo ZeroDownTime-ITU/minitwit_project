@@ -15,13 +15,6 @@ mkdir -p /mnt/volume_fra1_01
 mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01
 echo '/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01 ext4 defaults,nofail,discard 0 0' | tee -a /etc/fstab
 
-# 3. ADD SSH KEYS
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6lS3hLYIvcWHKP3zsh2K6SZBOQJWNwBQspdptT8/Fq mono@monolith" >> /root/.ssh/authorized_keys
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIPE68oskLFw2fC14xIWiZSIA0veODVn42LeswDDWI0R1 luismilanengel@Luis-MacBook-Air.local" >> /root/.ssh/authorized_keys
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIFmDcJ55KcT1ZRW5200BqocDh8kO3jq6xOzXdEZNCl9V conta@MSI" >> /root/.ssh/authorized_keys
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAID2cG2XUbHvk8i7Hmv4ix2KTiM5GAKEbJltl3pvNmCpE jbul@itu.dk" >> /root/.ssh/authorized_keys
-echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDMW7+/L+y8iZqzIMKEDcu+WY1Jq5AtIW7a//OhTknoa mathias@minitwit" >> /root/.ssh/authorized_keys
-
 echo "cd /minitwit" >> /root/.bashrc
 chmod +x /minitwit/deploy.sh
 
@@ -42,7 +35,7 @@ sudo systemctl start docker
 sudo systemctl enable docker
 
 # EXTRA CHECK TO SEE IF THAT ENV FILE IS THERE (I PRAY)
-if [ ! -f /minitwit.env ]; then 
+if [ ! -f /minitwit/.env ]; then 
     echo "Missing environment file. Copy it brother just as written in the ".env.template" file"
     exit 1
 fi
@@ -61,22 +54,5 @@ if [ -f "docker-compose.yml" ]; then
 else
     echo "Error: docker-compose.yml not found in /minitwit!"
 fi
-
-# 6. GET CERTS IF NEEDED
-# Check if certs already exist on the volume
-if [ ! -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    echo "No certs found. Requesting initial certs..."
-    docker compose run --rm -T --entrypoint certbot certbot certonly \
-        --webroot -w /var/www/certbot \
-        -d $DOMAIN -d www.$DOMAIN \
-        --email your@email.com --agree-tos --no-eff-email
-    echo "Certs issued successfully."
-else
-    echo "Certs already exist, skipping certbot."
-fi
-
-# 7. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
-cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
-docker compose exec -T nginx nginx -s reload
 
 echo "Provisioning complete!"

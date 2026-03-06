@@ -6,10 +6,10 @@ import java.util.Map;
 import io.javalin.http.Context;
 import zerodowntime.dto.web.MessageRequest;
 import zerodowntime.dto.web.MessageView;
-import zerodowntime.model.User;
 import zerodowntime.service.MessageService;
 import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class UserController extends BaseController {
     private UserService userService;
@@ -27,7 +27,7 @@ public class UserController extends BaseController {
         int pageOffset = getOffset(getPage(ctx));
         String username = ctx.pathParam("username");
 
-        User profileUser = userService.getUserByUsername(username);
+        UserRecord profileUser = userService.getUserByUsername(username);
         if (profileUser == null) {
             ctx.status(404).json(Map.of("error", "User not found"));
             return;

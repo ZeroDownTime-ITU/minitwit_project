@@ -2,7 +2,6 @@ package zerodowntime.controller.web;
 
 import java.util.List;
 import java.util.Map;
-
 import io.javalin.http.Context;
 import zerodowntime.constants.AppConstants;
 import zerodowntime.dto.web.MessageView;

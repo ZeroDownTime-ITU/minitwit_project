@@ -11,9 +11,9 @@ DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID --access-token $DO_TOKEN || echo "IP already assigned"
 
 # 2. MOUNTING
-mkdir -p /mnt/volume_fra1_01
-mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01
-echo '/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01 ext4 defaults,nofail,discard 0 0' | tee -a /etc/fstab
+mkdir -p /mnt/volume_fra1_02
+mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-02 /mnt/volume_fra1_02
+echo '/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-02 /mnt/volume_fra1_02 ext4 defaults,nofail,discard 0 0' | tee -a /etc/fstab
 
 echo "cd /minitwit" >> /root/.bashrc
 chmod +x /minitwit/deploy.sh

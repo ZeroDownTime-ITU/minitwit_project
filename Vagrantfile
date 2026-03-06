@@ -24,14 +24,13 @@ Vagrant.configure("2") do |config|
       provider.size = "s-1vcpu-1gb"
       provider.setup = false 
       provider.volumes = [
-        "cbaf4805-1639-11f1-a59c-0a58ac12ea84" # Change this to your own volume ID, which can be found by running 
-          # curl -X GET "https://api.digitalocean.com/v2/volumes" \ -H "Authorization: Bearer $DIGITAL_OCEAN_KEY"
+        "c79b54eb-197d-11f1-a59c-0a58ac12ea84"
       ]
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
-      "RESERVED_IP"       => "129.212.140.147",
+      "RESERVED_IP"       => "164.90.240.44"
     }
   end
 end

@@ -24,10 +24,6 @@ Vagrant.configure("2") do |config|
         "59c8825b-13df-11f1-9b32-0a58ac12e5cc"
       ]
     end
-
-    minitwit.vm.provision "file",
-    source: "remote_files/.env",
-    destination: "/minitwit/.env"
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],

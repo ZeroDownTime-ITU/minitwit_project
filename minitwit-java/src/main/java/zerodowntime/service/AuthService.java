@@ -1,9 +1,8 @@
 package zerodowntime.service;
 
 import org.mindrot.jbcrypt.BCrypt;
-
-import zerodowntime.model.User;
 import zerodowntime.repository.UserRepository;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class AuthService {
     UserRepository userRepository;
@@ -12,8 +11,8 @@ public class AuthService {
         this.userRepository = userRepository;
     }
 
-    public User loginUser(String username, String password) {
-        User user = userRepository.findByUsername(username)
+    public UserRecord loginUser(String username, String password) {
+        UserRecord user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalArgumentException("Invalid username"));
 
         if (!BCrypt.checkpw(password, user.getPwHash())) {
@@ -23,7 +22,7 @@ public class AuthService {
         return user;
     }
 
-    public User registerUser(String username, String email, String password) {
+    public UserRecord registerUser(String username, String email, String password) {
         validateUsername(username);
         validateEmail(email);
         validatePassword(password);

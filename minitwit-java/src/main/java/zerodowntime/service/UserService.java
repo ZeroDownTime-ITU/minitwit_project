@@ -2,9 +2,9 @@ package zerodowntime.service;
 
 import java.util.List;
 
-import zerodowntime.model.User;
 import zerodowntime.repository.FollowerRepository;
 import zerodowntime.repository.UserRepository;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class UserService {
     private UserRepository userRepository;
@@ -15,15 +15,15 @@ public class UserService {
         this.followerRepository = followerRepository;
     }
 
-    public User getUserById(Integer userId) {
+    public UserRecord getUserById(Integer userId) {
         return userRepository.findById(userId).orElse(null);
     }
 
     public Integer getUserIdByUsername(String username) {
-        return userRepository.findByUsername(username).map(User::getUserId).orElse(null);
+        return userRepository.findByUsername(username).map(UserRecord::getUserId).orElse(null);
     }
 
-    public User getUserByUsername(String username) {
+    public UserRecord getUserByUsername(String username) {
         return userRepository.findByUsername(username).orElse(null);
     }
 

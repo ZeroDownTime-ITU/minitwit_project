@@ -81,8 +81,12 @@ else
 fi
 
 # 7. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
-cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
-docker compose exec -T nginx nginx -s reload
+if [ -f "/mnt/volume_fra1_02/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
+    docker compose exec -T nginx nginx -s reload
+else
+    echo "Skipping SSL config swap - no certs found"
+fi
 
 
 echo "Provisioning complete!"

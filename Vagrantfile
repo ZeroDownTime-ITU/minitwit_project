@@ -1,11 +1,14 @@
 # -*- mode: ruby -*-
 # vi: set ft=ruby :
 
+#USE VAGRANT UP <NAME OF VM.DEFINE ("test" in this case)> TO START THE VM
+#USE VAGRANT DESTROY <NAME OF VM.DEFINE ("test" in this case)> TO DESTROY THE VM
+
 Vagrant.configure("2") do |config|
   config.vm.box = 'digital_ocean'
   config.ssh.private_key_path = '~/.ssh/id_ed25519'
 
-  config.vm.define "minitwit" do |minitwit|
+  config.vm.define "test" do |minitwit|
     minitwit.vm.synced_folder "./remote_files", "/minitwit", type: "rsync"
 
     minitwit.vm.provider :digital_ocean do |provider, override|
@@ -21,14 +24,13 @@ Vagrant.configure("2") do |config|
       provider.size = "s-1vcpu-1gb"
       provider.setup = false 
       provider.volumes = [
-        "59c8825b-13df-11f1-9b32-0a58ac12e5cc"
+        # Attach the existing volume id to the droplet here between ""
       ]
     end
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
-      "RESERVED_IP"       => "46.101.70.51",
-      "DOMAIN"            => "zerodt.live"
+      "RESERVED_IP"       => #ENV["RESERVED_IP"],
     }
   end
 end

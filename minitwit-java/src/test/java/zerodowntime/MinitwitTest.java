@@ -2,7 +2,8 @@ package zerodowntime;
 
 import io.javalin.Javalin;
 import okhttp3.*;
-import org.jdbi.v3.core.Jdbi;
+
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
@@ -25,9 +26,9 @@ public class MinitwitTest {
 
     @BeforeEach
     public void setUp() {
-        Jdbi testJdbi = TestDatabaseManager.createTestDatabase();
+        DSLContext db = TestDatabaseManager.createTestDatabase();
 
-        app = App.createApp(testJdbi).start(TEST_PORT);
+        app = App.createApp(db).start(TEST_PORT);
 
         client = createTestClient();
         http = new TestHelper(client, BASE_URL);

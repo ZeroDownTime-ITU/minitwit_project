@@ -1,8 +1,8 @@
 package zerodowntime;
 
-import org.jdbi.v3.core.Jdbi;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.*;
+import org.jooq.DSLContext;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import zerodowntime.constants.AppConstants.PublicApi;
@@ -22,16 +22,16 @@ import zerodowntime.service.UserService;
 
 public class App {
     public static void main(String[] args) {
-        Jdbi jdbi = DatabaseManager.createDatabase();
-        createApp(jdbi).start("0.0.0.0", 7070);
+        DatabaseManager.init();
+        createApp(DatabaseManager.getDsl()).start("0.0.0.0", 7070);
         System.out.println("Server started on http://0.0.0.0:7070");
     }
 
-    public static Javalin createApp(Jdbi jdbi) {
+    public static Javalin createApp(DSLContext dsl) {
         // Create repositories
-        UserRepository userRepo = jdbi.onDemand(UserRepository.class);
-        MessageRepository messageRepo = jdbi.onDemand(MessageRepository.class);
-        FollowerRepository followerRepo = jdbi.onDemand(FollowerRepository.class);
+        var userRepo = new UserRepository(dsl);
+        var messageRepo = new MessageRepository(dsl);
+        var followerRepo = new FollowerRepository(dsl);
 
         // Create services
         AuthService authService = new AuthService(userRepo);

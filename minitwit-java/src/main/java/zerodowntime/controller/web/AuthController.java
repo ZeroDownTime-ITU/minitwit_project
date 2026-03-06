@@ -6,9 +6,9 @@ import io.javalin.http.Context;
 import zerodowntime.dto.web.RegisterRequest;
 import zerodowntime.dto.web.LoginRequest;
 import zerodowntime.dto.web.UserDto;
-import zerodowntime.model.User;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.UserService;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class AuthController extends BaseController {
     AuthService authService;
@@ -23,7 +23,7 @@ public class AuthController extends BaseController {
         LoginRequest login = ctx.bodyAsClass(LoginRequest.class);
 
         try {
-            User user = authService.loginUser(login.username(), login.password());
+            UserRecord user = authService.loginUser(login.username(), login.password());
             UserDto userDto = new UserDto(
                     user.getUserId(),
                     user.getUsername(),
@@ -54,7 +54,7 @@ public class AuthController extends BaseController {
     }
 
     public void getSession(Context ctx) {
-        User user = ctx.attribute("user");
+        UserRecord user = ctx.attribute("user");
 
         if (user == null) {
             ctx.status(401);

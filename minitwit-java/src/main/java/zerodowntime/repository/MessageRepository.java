@@ -1,60 +1,98 @@
 package zerodowntime.repository;
 
-import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
-import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.statement.GetGeneratedKeys;
-import org.jdbi.v3.sqlobject.statement.SqlQuery;
-import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jooq.DSLContext;
 import zerodowntime.dto.web.MessageDto;
+import static zerodowntime.generated.jooq.Tables.*;
+
 import java.util.List;
 
-public interface MessageRepository {
+public class MessageRepository extends BaseRepository {
 
-    @SqlUpdate("INSERT INTO message (author_id, text, pub_date, flagged) VALUES (:authorId, :text, :pubDate, 0)")
-    @GetGeneratedKeys
-    int createMessage(
-            @Bind("authorId") int authorId,
-            @Bind("text") String text,
-            @Bind("pubDate") long pubDate);
+    public MessageRepository(DSLContext db) {
+        super(db);
+    }
 
-    @SqlQuery("SELECT m.message_id, m.author_id, m.text, m.pub_date, m.flagged, u.username, u.email " +
-            "FROM message m JOIN users u ON m.author_id = u.user_id " +
-            "WHERE m.flagged = 0 AND (u.user_id = :userId OR " +
-            "u.user_id IN (SELECT whom_id FROM follower WHERE who_id = :userId)) " +
-            "ORDER BY m.pub_date DESC LIMIT :limit OFFSET :offset")
-    @RegisterBeanMapper(MessageDto.class)
-    List<MessageDto> getUserTimelineMessages(
-            @Bind("userId") int userId,
-            @Bind("limit") int limit,
-            @Bind("offset") int offset);
+    public int createMessage(Integer authorId, String text, long pubDate) {
+        var message = db.newRecord(MESSAGE);
 
-    @SqlQuery("SELECT COUNT(*) FROM message m JOIN users u ON m.author_id = u.user_id " +
-            "WHERE m.flagged = 0 AND (u.user_id = :userId OR " +
-            "u.user_id IN (SELECT whom_id FROM follower WHERE who_id = :userId))")
-    int getUserTimelineCount(@Bind("userId") int userId);
+        message.setAuthorId(authorId);
+        message.setText(text);
+        message.setPubDate(pubDate);
+        message.setFlagged(0);
 
-    @SqlQuery("SELECT m.message_id, m.author_id, m.text, m.pub_date, m.flagged, u.username, u.email " +
-            "FROM message m JOIN users u ON m.author_id = u.user_id " +
-            "WHERE m.flagged = 0 " +
-            "ORDER BY m.pub_date DESC LIMIT :limit OFFSET :offset")
-    @RegisterBeanMapper(MessageDto.class)
-    List<MessageDto> getPublicTimelineMessages(
-            @Bind("limit") int limit,
-            @Bind("offset") int offset);
+        message.store();
 
-    @SqlQuery("SELECT COUNT(*) FROM message WHERE flagged = 0")
-    int getPublicTimelineCount();
+        return message.getMessageId();
+    }
 
-    @SqlQuery("SELECT m.*, u.username, u.email FROM message m " +
-            "JOIN users u ON u.user_id = m.author_id " +
-            "WHERE u.user_id = :userId " +
-            "ORDER BY m.pub_date DESC LIMIT :limit OFFSET :offset")
-    @RegisterBeanMapper(MessageDto.class)
-    List<MessageDto> getMessagesByUserId(
-            @Bind("userId") int userId,
-            @Bind("limit") int limit,
-            @Bind("offset") int offset);
+    public List<MessageDto> getUserTimelineMessages(int userId, int limit, int offset) {
+        return db.select(MESSAGE.fields())
+                .select(USERS.USERNAME, USERS.EMAIL)
+                .from(MESSAGE)
+                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
+                .where(MESSAGE.FLAGGED.eq(0))
+                .and(
+                        USERS.USER_ID.eq(userId)
+                                .or(USERS.USER_ID.in(
+                                        db.select(FOLLOWER.WHOM_ID)
+                                                .from(FOLLOWER)
+                                                .where(FOLLOWER.WHO_ID
+                                                        .eq(userId)))))
+                .orderBy(MESSAGE.PUB_DATE.desc())
+                .limit(limit)
+                .offset(offset)
+                .fetchInto(MessageDto.class);
+    }
 
-    @SqlQuery("SELECT COUNT(*) FROM message WHERE flagged = 0 AND author_id = :userId")
-    int getAllMessagesUserCount(@Bind("userId") int userId);
+    public int getUserTimelineCount(int userId) {
+        return db.selectCount()
+                .from(MESSAGE)
+                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
+                .where(MESSAGE.FLAGGED.eq(0))
+                .and(USERS.USER_ID.eq(userId)
+                        .or(USERS.USER_ID.in(
+                                db.select(FOLLOWER.WHOM_ID)
+                                        .from(FOLLOWER)
+                                        .where(FOLLOWER.WHO_ID.eq(userId)))))
+                .fetchOne(0, int.class);
+    }
+
+    public List<MessageDto> getPublicTimelineMessages(int limit, int offset) {
+        return db.select(MESSAGE.fields())
+                .select(USERS.USERNAME, USERS.EMAIL)
+                .from(MESSAGE)
+                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
+                .where(MESSAGE.FLAGGED.eq(0))
+                .orderBy(MESSAGE.PUB_DATE.desc())
+                .limit(limit)
+                .offset(offset)
+                .fetchInto(MessageDto.class);
+    }
+
+    public int getPublicTimelineCount() {
+        return db.selectCount()
+                .from(MESSAGE)
+                .where(MESSAGE.FLAGGED.eq(0))
+                .fetchOne(0, int.class);
+    }
+
+    public List<MessageDto> getMessagesByUserId(int userId, int limit, int offset) {
+        return db.select(MESSAGE.fields())
+                .select(USERS.USERNAME, USERS.EMAIL)
+                .from(MESSAGE)
+                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
+                .where(USERS.USER_ID.eq(userId))
+                .orderBy(MESSAGE.PUB_DATE.desc())
+                .limit(limit)
+                .offset(offset)
+                .fetchInto(MessageDto.class);
+    }
+
+    public int getAllMessagesUserCount(int userId) {
+        return db.selectCount()
+                .from(MESSAGE)
+                .where(MESSAGE.FLAGGED.eq(0))
+                .and(MESSAGE.AUTHOR_ID.eq(userId))
+                .fetchOne(0, int.class);
+    }
 }

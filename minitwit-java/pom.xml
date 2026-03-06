@@ -42,23 +42,6 @@
       <version>2.0.12</version>
     </dependency>
 
-    <!-- JBDI drivers (JBDC SQL Wrapper) -->
-    <dependency>
-      <groupId>org.jdbi</groupId>
-      <artifactId>jdbi3-core</artifactId>
-      <version>3.45.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jdbi</groupId>
-      <artifactId>jdbi3-postgres</artifactId>
-      <version>3.45.1</version>
-    </dependency>
-    <dependency>
-      <groupId>org.jdbi</groupId>
-      <artifactId>jdbi3-sqlobject</artifactId>
-      <version>3.45.1</version>
-    </dependency>
-
     <dependency>
       <groupId>org.postgresql</groupId>
       <artifactId>postgresql</artifactId>
@@ -70,6 +53,12 @@
       <groupId>com.zaxxer</groupId>
       <artifactId>HikariCP</artifactId>
       <version>5.1.0</version>
+    </dependency>
+
+    <dependency>
+      <groupId>org.jooq</groupId>
+      <artifactId>jooq</artifactId>
+      <version>3.20.11</version>
     </dependency>
 
     <!-- Bcrypt for password hashing -->
@@ -160,6 +149,44 @@
             </configuration>
           </execution>
         </executions>
+      </plugin>
+
+      <plugin>
+          <groupId>org.jooq</groupId>
+          <artifactId>jooq-codegen-maven</artifactId>
+          <version>3.19.0</version>
+
+          <configuration>
+              <jdbc>
+                  <driver>org.postgresql.Driver</driver>
+                  <url>jdbc:postgresql://localhost:5432/minitwit</url>
+                  <user>minitwit_admin</user>
+                  <password>dev_password</password>
+              </jdbc>
+              <generator>
+                  <database>
+                    <name>org.jooq.meta.postgres.PostgresDatabase</name>
+                    <includes>.*</includes> <inputSchema>public</inputSchema>
+                  </database>
+                  <target>
+                    <packageName>zerodowntime.generated.jooq</packageName>
+                    <directory>src/main/java</directory>
+                  </target>
+                  <strategy>
+                      <matchers>
+                          <tables>
+                              <table>
+                                  <expression>^(.*)S$</expression> 
+                                  <recordClass>
+                                      <expression>$1_RECORD</expression>
+                                      <transform>PASCAL</transform>
+                                  </recordClass>
+                              </table>
+                          </tables>
+                      </matchers>
+                  </strategy>
+              </generator>
+          </configuration>
       </plugin>
     </plugins>
   </build>

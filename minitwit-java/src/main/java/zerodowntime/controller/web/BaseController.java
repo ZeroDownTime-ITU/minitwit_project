@@ -3,7 +3,7 @@ package zerodowntime.controller.web;
 import io.javalin.http.Context;
 import io.javalin.http.UnauthorizedResponse;
 import zerodowntime.constants.AppConstants;
-import zerodowntime.model.User;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class BaseController {
 
@@ -21,8 +21,8 @@ public class BaseController {
     /**
      * Get authenticated user or throw 401
      */
-    protected User getAuthenticatedUser(Context ctx) {
-        User user = ctx.attribute("user"); // From before filter
+    protected UserRecord getAuthenticatedUser(Context ctx) {
+        UserRecord user = ctx.attribute("user"); // From before filter
         if (user == null) {
             throw new UnauthorizedResponse("You must be logged in.");
         }

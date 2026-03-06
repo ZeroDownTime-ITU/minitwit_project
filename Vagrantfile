@@ -30,7 +30,8 @@ Vagrant.configure("2") do |config|
     
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
-      "RESERVED_IP"       => "164.90.240.44"
+      "RESERVED_IP"       => "164.90.240.44",
+      "DOMAIN"            => "minitwit.app"
     }
   end
 end

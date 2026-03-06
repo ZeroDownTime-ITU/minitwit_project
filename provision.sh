@@ -26,7 +26,6 @@ grep -q "mathias@minitwit" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC
 grep -q "cd /minitwit" /root/.bashrc || echo "cd /minitwit" >> /root/.bashrc
 chmod +x /minitwit/deploy.sh 
 
-sudo apt-get update
 # The following address an issue in DO's Ubuntu images, which still contain a lock file
 sudo killall apt apt-get 2>/dev/null || true
 sudo rm -f /var/lib/dpkg/lock-frontend
@@ -35,9 +34,13 @@ while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
       fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
     sleep 5
 done
+sudo apt-get update
 
-# 3. INSTALL DOCKER & COMPOSE
-DEBIAN_FRONTEND=noninteractive curl -fsSL https://get.docker.com | sh
+
+# 4. INSTALL DOCKER & COMPOSE
+if ! command -v docker &> /dev/null; then
+    DEBIAN_FRONTEND=noninteractive curl -fsSL https://get.docker.com | sh
+fi
 sudo usermod -aG docker root
 sudo systemctl start docker
 sudo systemctl enable docker
@@ -51,12 +54,12 @@ fi
 # THIS KEEPS THE FILE SECURED
 sudo chmod 600 /minitwit/.env
 
-# 4. SET UP NGINX WITH HTTP CONFIG
+# 5. SET UP NGINX WITH HTTP CONFIG
 if [ ! -f /minitwit/nginx.conf ]; then
     cp /minitwit/nginx-http.conf /minitwit/nginx.conf
 fi
 
-# 5. START APPS THROUGH DOCKER COMPOSE
+# 6. START APPS THROUGH DOCKER COMPOSE
 cd /minitwit
 if [ -f "docker-compose.yml" ]; then
     sudo docker compose up -d
@@ -65,7 +68,7 @@ else
     echo "Error: docker-compose.yml not found in /minitwit!"
 fi
 
-# 6. GET CERTS IF NEEDED
+# 7. GET CERTS IF NEEDED
 # Check if certs already exist on the volume
 if [ ! -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
     echo "No certs found. Requesting initial certs..."
@@ -78,7 +81,7 @@ else
     echo "Certs already exist, skipping certbot."
 fi
 
-# 7. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
+# 8. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
 if [ -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
     cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
     docker compose exec -T nginx nginx -s reload

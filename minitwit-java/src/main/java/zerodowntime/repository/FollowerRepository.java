@@ -1,36 +1,49 @@
 package zerodowntime.repository;
 
-import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.statement.SqlQuery;
-import org.jdbi.v3.sqlobject.statement.SqlUpdate;
+import org.jooq.DSLContext;
+import zerodowntime.generated.jooq.tables.Users;
+import static zerodowntime.generated.jooq.Tables.*;
 import java.util.List;
 
-public interface FollowerRepository {
+public class FollowerRepository extends BaseRepository {
 
-    @SqlUpdate("INSERT INTO follower (who_id, whom_id) VALUES (:whoId, :whomId) ON CONFLICT DO NOTHING")
-    int followUser(
-            @Bind("whoId") int whoId,
-            @Bind("whomId") int whomId);
+    public FollowerRepository(DSLContext db) {
+        super(db);
+    }
 
-    @SqlUpdate("DELETE FROM follower WHERE who_id = :whoId AND whom_id = :whomId")
-    int unfollowUser(
-            @Bind("whoId") int whoId,
-            @Bind("whomId") int whomId);
+    public int followUser(int whoId, int whomId) {
+        return db.mergeInto(FOLLOWER)
+                .using(db.selectOne())
+                .on(FOLLOWER.WHO_ID.eq(whoId).and(FOLLOWER.WHOM_ID.eq(whomId)))
+                .whenNotMatchedThenInsert(FOLLOWER.WHO_ID, FOLLOWER.WHOM_ID)
+                .values(whoId, whomId)
+                .execute();
+    }
 
-    @SqlQuery("SELECT EXISTS(SELECT 1 FROM follower WHERE who_id = :userId AND whom_id = :whomId)")
-    boolean isFollowing(
-            @Bind("userId") Integer userId,
-            @Bind("whomId") Integer whomId);
+    public int unfollowUser(int whoId, int whomId) {
+        return db.deleteFrom(FOLLOWER)
+                .where(FOLLOWER.WHO_ID.eq(whoId))
+                .and(FOLLOWER.WHOM_ID.eq(whomId))
+                .execute();
+    }
 
-    @SqlQuery("""
-                SELECT u_whom.username
-                FROM users u_who
-                JOIN follower f ON f.who_id = u_who.user_id
-                JOIN users u_whom ON f.whom_id = u_whom.user_id
-                WHERE u_who.username = :username
-                LIMIT :limit
-            """)
-    List<String> getUserFollowing(
-            @Bind("username") String username,
-            @Bind("limit") int limit);
+    public boolean isFollowing(Integer userId, Integer whomId) {
+        return db.fetchExists(
+                db.selectOne()
+                        .from(FOLLOWER)
+                        .where(FOLLOWER.WHO_ID.eq(userId))
+                        .and(FOLLOWER.WHOM_ID.eq(whomId)));
+    }
+
+    public List<String> getUserFollowing(String username, int limit) {
+        Users uWhom = USERS.as("u_whom");
+
+        return db.select(uWhom.USERNAME)
+                .from(USERS)
+                .join(FOLLOWER).on(FOLLOWER.WHO_ID.eq(USERS.USER_ID))
+                .join(uWhom).on(FOLLOWER.WHOM_ID.eq(uWhom.USER_ID))
+                .where(USERS.USERNAME.eq(username))
+                .limit(limit)
+                .fetch(uWhom.USERNAME);
+    }
 }

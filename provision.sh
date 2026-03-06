@@ -36,8 +36,10 @@ while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
 done
 
 # 3. INSTALL DOCKER & COMPOSE
-sudo apt-get install -y docker.io docker-compose
+DEBIAN_FRONTEND=noninteractive curl -fsSL https://get.docker.com | sh
 sudo usermod -aG docker root
+sudo systemctl start docker
+sudo systemctl enable docker
 
 # 4. SET UP NGINX WITH HTTP CONFIG
 cp /minitwit/nginx-http.conf /minitwit/nginx.conf
@@ -45,7 +47,7 @@ cp /minitwit/nginx-http.conf /minitwit/nginx.conf
 # 5. START APPS THROUGH DOCKER COMPOSE
 cd /minitwit
 if [ -f "docker-compose.yml" ]; then
-    sudo docker-compose up -d
+    sudo docker compose up -d
     echo "Containers started."
 else
     echo "Error: docker-compose.yml not found in /minitwit!"
@@ -55,7 +57,7 @@ fi
 # Check if certs already exist on the volume
 if [ ! -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
     echo "No certs found. Requesting initial certs..."
-    docker-compose run --rm -T --entrypoint certbot certbot certonly \
+    docker compose run --rm -T --entrypoint certbot certbot certonly \
         --webroot -w /var/www/certbot \
         -d $DOMAIN -d www.$DOMAIN \
         --email your@email.com --agree-tos --no-eff-email
@@ -66,6 +68,6 @@ fi
 
 # 7. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
 cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
-docker-compose exec -T nginx nginx -s reload
+docker compose exec -T nginx nginx -s reload
 
 echo "Provisioning complete!"

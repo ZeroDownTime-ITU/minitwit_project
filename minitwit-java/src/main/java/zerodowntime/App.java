@@ -57,7 +57,7 @@ public class App {
                 swagger.withDocumentationPath("/openapi");
             }));
 
-            config.concurrency.useVirtualThreads = false; // Disable virtual threads for better compatibility with JDBI
+            config.concurrency.useVirtualThreads = false; // Disable virtual threads for better compatibility with JDBC
 
             config.routes.before("/web/*", ctx -> {
                 Integer userId = ctx.sessionAttribute("user_id");

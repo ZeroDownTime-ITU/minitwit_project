@@ -1,28 +1,42 @@
 package zerodowntime.repository;
 
-import org.jdbi.v3.sqlobject.config.RegisterBeanMapper;
-import org.jdbi.v3.sqlobject.customizer.Bind;
-import org.jdbi.v3.sqlobject.statement.SqlQuery;
-import org.jdbi.v3.sqlobject.statement.SqlUpdate;
-import zerodowntime.model.User;
-
+import org.jooq.DSLContext;
+import static zerodowntime.generated.jooq.Tables.*;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 import java.util.Optional;
 
-@RegisterBeanMapper(User.class)
-public interface UserRepository {
+public class UserRepository extends BaseRepository {
 
-    @SqlQuery("SELECT * FROM users WHERE user_id = :userId")
-    Optional<User> findById(@Bind("userId") Integer userId);
+    public UserRepository(DSLContext db) {
+        super(db);
+    }
 
-    @SqlQuery("SELECT * FROM users WHERE username = :username")
-    Optional<User> findByUsername(@Bind("username") String username);
+    public Optional<UserRecord> findById(Integer userId) {
+        return db.selectFrom(USERS)
+                .where(USERS.USER_ID.eq(userId))
+                .fetchOptional();
+    }
 
-    @SqlUpdate("INSERT INTO users (username, email, pw_hash) VALUES (:username, :email, :pwHash)")
-    void createUser(
-            @Bind("username") String username,
-            @Bind("email") String email,
-            @Bind("pwHash") String pwHash);
+    public Optional<UserRecord> findByUsername(String username) {
+        return db.selectFrom(USERS)
+                .where(USERS.USERNAME.eq(username))
+                .fetchOptional();
+    }
 
-    @SqlQuery("SELECT user_id FROM users WHERE username = :username")
-    Optional<Integer> getUserIdByUsername(@Bind("username") String username);
+    public void createUser(String username, String email, String pwHash) {
+        var user = db.newRecord(USERS);
+
+        user.setUsername(username);
+        user.setEmail(email);
+        user.setPwHash(pwHash);
+
+        user.store();
+    }
+
+    public Optional<Integer> getUserIdByUsername(String username) {
+        return db.select(USERS.USER_ID)
+                .from(USERS)
+                .where(USERS.USERNAME.eq(username))
+                .fetchOptional(USERS.USER_ID);
+    }
 }

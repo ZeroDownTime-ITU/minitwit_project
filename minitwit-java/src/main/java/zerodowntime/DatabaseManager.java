@@ -1,63 +1,64 @@
 package zerodowntime;
 
-import org.jdbi.v3.core.Jdbi;
-import org.jdbi.v3.sqlobject.SqlObjectPlugin;
+import org.jooq.DSLContext;
+import org.jooq.SQLDialect;
+import org.jooq.impl.DSL;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 
-import org.jdbi.v3.postgres.PostgresPlugin;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import javax.sql.DataSource;
 
 public class DatabaseManager {
+    private static DSLContext dslContext;
+    private static HikariDataSource dataSource;
 
-    public static Jdbi createDatabase() {
-        String url = System.getenv("JDBC_URL");
-        String user = System.getenv("JDBC_USER");
-        String pass = System.getenv("JDBC_PASS");
+    public static void init(DataSource dataSource) {
+        dslContext = DSL.using(dataSource, SQLDialect.POSTGRES);
+    }
 
+    public static void init() {
         HikariConfig config = new HikariConfig();
-        config.setJdbcUrl(url);
-        config.setUsername(user);
-        config.setPassword(pass);
+        config.setJdbcUrl(System.getenv("JDBC_URL"));
+        config.setUsername(System.getenv("JDBC_USER"));
+        config.setPassword(System.getenv("JDBC_PASS"));
 
         // --- 1 vCPU / 1GB RAM Optimizations ---
         config.setMaximumPoolSize(10);
         config.setMinimumIdle(2);
-
         config.setConnectionTimeout(3000); // Wait 3s max for a connection, then error out
         config.setIdleTimeout(600000); // 10 minutes
         config.setMaxLifetime(1800000); // 30 minutes
 
-        HikariDataSource ds = new HikariDataSource(config);
-        Jdbi jdbi = Jdbi.create(ds);
+        dataSource = new HikariDataSource(config);
+        dslContext = DSL.using(dataSource, SQLDialect.POSTGRES);
 
-        jdbi.installPlugin(new SqlObjectPlugin());
-        jdbi.installPlugin(new PostgresPlugin());
-
-        initializeSchema(jdbi);
-
-        return jdbi;
+        initializeSchema();
     }
 
-    private static void initializeSchema(Jdbi jdbi) {
-        jdbi.useHandle(handle -> {
-            try (InputStream is = DatabaseManager.class.getResourceAsStream("/schema.sql")) {
-                if (is == null)
-                    throw new RuntimeException("schema.sql not found!");
+    public static DSLContext getDsl() {
+        if (dslContext == null)
+            init();
+        return dslContext;
+    }
 
-                String content = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+    private static void initializeSchema() {
+        try (InputStream is = DatabaseManager.class.getResourceAsStream("/schema.sql")) {
+            if (is == null)
+                throw new RuntimeException("schema.sql not found!");
 
-                for (String sql : content.split(";")) {
-                    if (!sql.trim().isEmpty()) {
-                        handle.execute(sql);
-                    }
+            String sql = new String(is.readAllBytes(), StandardCharsets.UTF_8);
+            for (String statement : sql.split(";")) {
+                if (!statement.trim().isEmpty()) {
+                    getDsl().execute(statement);
                 }
-                System.out.println("Database schema verified/initialized.");
-            } catch (Exception e) {
-                System.err.println("Schema info: " + e.getMessage());
             }
-        });
+
+            System.out.println("Database schema verified/initialized via jOOQ.");
+        } catch (Exception e) {
+            System.err.println("Schema Initialization Error: " + e.getMessage());
+        }
     }
 }

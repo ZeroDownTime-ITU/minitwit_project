@@ -9,8 +9,3 @@ export interface Message {
 export interface FollowsResponse {
     follows: string[];
 }
-
-export interface UserProfileData {
-    messages: Message[];
-    followed: boolean;
-}

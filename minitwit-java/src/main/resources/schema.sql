@@ -7,7 +7,8 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS follower (
   who_id INTEGER REFERENCES users(user_id),
-  whom_id INTEGER REFERENCES users(user_id)
+  whom_id INTEGER REFERENCES users(user_id),
+  PRIMARY KEY (who_id, whom_id)
 );
 
 CREATE TABLE IF NOT EXISTS message (

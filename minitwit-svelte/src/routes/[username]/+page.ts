@@ -1,14 +1,17 @@
+import type { Message } from '$lib/types';
 import type { PageLoad } from './$types';
-import type { UserProfileData } from '$lib/types';
 
-export const load: PageLoad = async ({ fetch, params }) => {
-    const profilePromise = fetch(`/api/user/${params.username}`)
-        .then(async (r) => {
-            return r.ok ? (await r.json() as UserProfileData) : null;
-        })
-        .catch(() => null);
+export const load: PageLoad = async ({ fetch, params, url }) => {
+    const page = Number(url.searchParams.get('page') ?? 0);
+
+    const result = await fetch(`/web/user/${params.username}?page=${page}`)
+        .then(r => r.ok ? r.json() : { messages: [], following: false, total: 0})
+        .catch(() => ({ messages: [], following: false, total: 0}));
 
     return {
-        profile: profilePromise
+        messages: result.messages as Message[],
+        following: result.following as boolean,
+        total: result.total as number,
+        page
     };
 };

@@ -4,10 +4,10 @@ import java.util.List;
 
 import zerodowntime.dto.simulator.Message;
 import zerodowntime.dto.web.MessageDto;
-import zerodowntime.model.User;
 import zerodowntime.repository.MessageRepository;
 import zerodowntime.repository.UserRepository;
 import zerodowntime.util.FormatUtils;
+import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 public class MessageService {
     private MessageRepository messageRepository;
@@ -24,7 +24,7 @@ public class MessageService {
     }
 
     public List<Message> getRecentMessages(int limit) {
-        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessagesPaged(limit, 0);
+        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessages(limit, 0);
 
         return rawMessages.stream()
                 .map(m -> new Message(
@@ -35,10 +35,10 @@ public class MessageService {
     }
 
     public List<Message> getMessagesForUser(String username, int limit) {
-        User user = userRepository.findByUsername(username)
+        UserRecord user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new RuntimeException("User not found with username: " + username));
 
-        List<MessageDto> rawMessages = messageRepository.getMessagesByUserId(user.getUserId(), limit);
+        List<MessageDto> rawMessages = messageRepository.getMessagesByUserId(user.getUserId(), limit, 0);
 
         return rawMessages.stream()
                 .map(m -> new Message(

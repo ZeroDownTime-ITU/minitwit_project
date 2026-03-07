@@ -1,0 +1,13 @@
+THOUGHTS ON 5th OF MARCH
+
+Started out with the idea of getting the environment variables on the server in a secure way. 
+
+Found out that "chmod 600" makes it so that only root has read access to the file meaning that all that ssh'es into the server with root can see it 
+Since we are all "root" for our ssh keys, it turns out it should not be a problem to have the file on the server.
+
+The file "authorized_users" at "~/.ssh" already is chmod 600 meaning that it is not mutable so it should be safe.
+
+Another discovery was that inside of our "remote_files/deploy.sh" we say "echo "VERSION=${VERSION}" > .env" but I do believe this will override the
+entire file with "VERSION=${VERSION}"
+
+I think we might need to remove it

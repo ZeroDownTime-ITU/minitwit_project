@@ -1,12 +1,12 @@
 package zerodowntime.service;
 
+import zerodowntime.constants.AppConstants;
 import zerodowntime.dto.web.MessageDto;
 import zerodowntime.dto.web.MessageView;
 import zerodowntime.mapper.MessageMapper;
 import zerodowntime.repository.MessageRepository;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 public class TimelineService {
     private final MessageRepository messageRepository;
@@ -20,22 +20,35 @@ public class TimelineService {
 
         return rawMessages.stream()
                 .map(MessageMapper::toView)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     public List<MessageView> getPublicTimeline(int limit, int offset) {
-        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessagesPaged(limit, offset);
+        List<MessageDto> rawMessages = messageRepository.getPublicTimelineMessages(limit, offset);
 
         return rawMessages.stream()
                 .map(MessageMapper::toView)
-                .collect(Collectors.toList());
+                .toList();
     }
 
-    public int getUserTimelineCount(int userId) {
+    public List<MessageView> getProfileMessages(Integer profileUserId, int offset) {
+        List<MessageDto> rawMessages = messageRepository.getMessagesByUserId(profileUserId,
+                AppConstants.PER_PAGE, offset);
+
+        return rawMessages.stream()
+                .map(MessageMapper::toView)
+                .toList();
+    }
+
+    public int countUserTimelineMessages(int userId) {
         return messageRepository.getUserTimelineCount(userId);
     }
 
-    public int getPublicTimelineCount() {
+    public int countPublicTimelineMessages() {
         return messageRepository.getPublicTimelineCount();
+    }
+
+    public int countProfileMessages(int userId) {
+        return messageRepository.getAllMessagesUserCount(userId);
     }
 }

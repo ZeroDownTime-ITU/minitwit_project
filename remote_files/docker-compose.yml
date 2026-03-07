@@ -18,11 +18,17 @@ services:
 
   java-backend:
     image: despotheanimal/minitwit-java:${VERSION:-latest}
-    restart: always
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:7070/api/latest"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     environment:
       - JDBC_URL=${JDBC_URL}
       - JDBC_USER=${POSTGRES_USER}
       - JDBC_PASS=${POSTGRES_PASSWORD}
+      - JAVA_TOOL_OPTIONS=-Djdk.tracePinnedThreads=full
     depends_on:
       postgres-db:
         condition: service_healthy

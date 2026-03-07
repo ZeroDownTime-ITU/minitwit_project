@@ -70,7 +70,7 @@ services:
 
   prometheus:
       build:
-        context: ./monitoring/prometheus
+        context: ../monitoring/prometheus
         dockerfile: Dockerfile
       volumes:
         - ./prometheus.yml:/etc/prometheus/prometheus.yml
@@ -82,7 +82,7 @@ services:
 
   grafana:
     build:
-      context: ./monitoring/grafana
+      context: ../monitoring/grafana
       dockerfile: Dockerfile
     ports:
       - "3000:3000"

@@ -2,7 +2,6 @@ package zerodowntime;
 
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.*;
-import org.jooq.DSLContext;
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import zerodowntime.constants.AppConstants.PublicApi;

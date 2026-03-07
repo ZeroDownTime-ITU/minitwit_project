@@ -20,19 +20,26 @@ import zerodowntime.service.MessageService;
 import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
 import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.hotspot.DefaultExports;
 import java.io.StringWriter;
 
 public class App {
-
-    static final Counter httpRequests = Counter.build()
+    static final Counter requestCounter = Counter.build()
             .name("minitwit_http_requests_total")
-            .help("Total antal HTTP requests")
-            .labelNames("method", "path")
+            .help("Total HTTP requests")
+            .labelNames("method", "path", "status")
+            .register();
+    static final Histogram requestDuration = Histogram.build()
+            .name("http_request_duration_seconds")
+            .help("HTTP request duration")
+            .labelNames("method", "path", "status")
             .register();
 
     public static void main(String[] args) {
+        DefaultExports.initialize();
         DatabaseManager.init();
         createApp(DatabaseManager.getDsl()).start("0.0.0.0", 7070);
         System.out.println("Server started on http://0.0.0.0:7070");
@@ -71,13 +78,28 @@ public class App {
             config.concurrency.useVirtualThreads = false; // Disable virtual threads for better compatibility with JDBC
 
             config.routes.before("/*", ctx -> {
-                httpRequests.labels(ctx.method().name(), ctx.path()).inc();
+                ctx.attribute("startTime", System.currentTimeMillis());
             });
 
             config.routes.before("/web/*", ctx -> {
                 Integer userId = ctx.sessionAttribute("user_id");
                 if (userId != null) {
                     userRepo.findById(userId).ifPresent(user -> ctx.attribute("user", user));
+                }
+            });
+
+            config.routes.after(ctx -> {
+                String method = ctx.method().toString();
+                String path = ctx.path();
+                String status = String.valueOf(ctx.status().getCode());
+
+                requestCounter.labels(method, path, status).inc();
+
+                // add this
+                Long startTime = ctx.attribute("startTime");
+                if (startTime != null) {
+                    long duration = System.currentTimeMillis() - startTime;
+                    requestDuration.labels(method, path, status).observe(duration / 1000.0);
                 }
             });
 
@@ -117,7 +139,8 @@ public class App {
                 get("/metrics", ctx -> {
                     StringWriter sw = new StringWriter();
                     TextFormat.write004(sw, CollectorRegistry.defaultRegistry.metricFamilySamples());
-                    ctx.contentType(TextFormat.CONTENT_TYPE_004).result(sw.toString());
+                    ctx.contentType(TextFormat.CONTENT_TYPE_004);
+                    ctx.result(sw.toString());
                 });
 
             });

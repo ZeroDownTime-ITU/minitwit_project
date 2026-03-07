@@ -69,22 +69,23 @@ services:
       - app-network
 
   prometheus:
-      image: prom/prometheus:v3.5.1
+      image: prom/prometheus
       container_name: prometheus
       volumes:
         - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        - /mnt/volume_fra1_01/prometheus_data:/prometheus
       ports:
         - "9090:9090"
       networks:
         - app-network
 
   grafana:
-    image: grafana/grafana:12.1
+    image: grafana/grafana
     container_name: grafana
     ports:
       - "3000:3000"
     volumes:
-      - grafana-storage:/var/lib/grafana
+      - /mnt/volume_fra1_01/grafana_data:/var/lib/grafana
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:

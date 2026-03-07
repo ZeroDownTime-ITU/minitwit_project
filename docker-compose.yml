@@ -46,3 +46,16 @@ services:
       - CHOKIDAR_INTERVAL=100
     depends_on:
       - java-backend
+
+  prometheus:
+    image: prom/prometheus
+    volumes:
+      - ./remote_files/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - java-backend
+
+volumes:
+  prometheus_data: 

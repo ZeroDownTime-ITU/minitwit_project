@@ -6,3 +6,4 @@ scrape_configs:
     scrape_interval: 5s
     static_configs:
       - targets: ['java-backend:7070']
+    metrics_path: '/metrics'

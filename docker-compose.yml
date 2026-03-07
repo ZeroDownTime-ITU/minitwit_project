@@ -48,14 +48,27 @@ services:
       - java-backend
 
   prometheus:
-    image: prom/prometheus
+    build:
+      context: ./monitoring/prometheus
+      dockerfile: Dockerfile
     volumes:
-      - ./remote_files/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
     ports:
       - "9090:9090"
     depends_on:
       - java-backend
 
+  grafana:
+    build:
+      context: ./monitoring/grafana
+      dockerfile: Dockerfile
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
 volumes:
   prometheus_data: 
+  grafana_data:

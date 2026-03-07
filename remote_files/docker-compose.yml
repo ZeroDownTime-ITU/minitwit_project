@@ -69,8 +69,9 @@ services:
       - app-network
 
   prometheus:
-      image: prom/prometheus
-      container_name: prometheus
+      build:
+        context: ./monitoring/prometheus
+        dockerfile: Dockerfile
       volumes:
         - ./prometheus.yml:/etc/prometheus/prometheus.yml
         - /mnt/volume_fra1_01/prometheus_data:/prometheus
@@ -80,8 +81,9 @@ services:
         - app-network
 
   grafana:
-    image: grafana/grafana
-    container_name: grafana
+    build:
+      context: ./monitoring/grafana
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:

@@ -19,8 +19,19 @@ import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
 import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
+import io.prometheus.client.Counter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
+import java.io.StringWriter;
 
 public class App {
+
+    static final Counter httpRequests = Counter.build()
+            .name("minitwit_http_requests_total")
+            .help("Total antal HTTP requests")
+            .labelNames("method", "path")
+            .register();
+
     public static void main(String[] args) {
         Jdbi jdbi = DatabaseManager.createDatabase();
         createApp(jdbi).start("0.0.0.0", 7070);
@@ -58,6 +69,10 @@ public class App {
             }));
 
             config.concurrency.useVirtualThreads = true;
+
+            config.routes.before("/*", ctx -> {
+                httpRequests.labels(ctx.method().name(), ctx.path()).inc();
+            });
 
             config.routes.before("/web/*", ctx -> {
                 Integer userId = ctx.sessionAttribute("user_id");
@@ -98,6 +113,13 @@ public class App {
                 post(SimulatorApi.FLLWS_USER, simController::postFollow);
                 get(SimulatorApi.MSGS, simController::getRecentMessages);
                 get(SimulatorApi.MSGS_USER, simController::getMessagesUser);
+
+                get("/metrics", ctx -> {
+                    StringWriter sw = new StringWriter();
+                    TextFormat.write004(sw, CollectorRegistry.defaultRegistry.metricFamilySamples());
+                    ctx.contentType(TextFormat.CONTENT_TYPE_004).result(sw.toString());
+                });
+
             });
         });
 

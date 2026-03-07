@@ -68,6 +68,32 @@ services:
     networks:
       - app-network
 
+  prometheus:
+      build:
+        context: ../monitoring/prometheus
+        dockerfile: Dockerfile
+      volumes:
+        - ./prometheus.yml:/etc/prometheus/prometheus.yml
+        - /mnt/volume_fra1_01/prometheus_data:/prometheus
+      ports:
+        - "9090:9090"
+      networks:
+        - app-network
+
+  grafana:
+    build:
+      context: ../monitoring/grafana
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    volumes:
+      - /mnt/volume_fra1_01/grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - app-network
+
+
   certbot:
     image: certbot/certbot
     restart: always
@@ -81,3 +107,6 @@ services:
 networks:
   app-network:
     driver: bridge
+
+volumes:
+  grafana-storage: {}

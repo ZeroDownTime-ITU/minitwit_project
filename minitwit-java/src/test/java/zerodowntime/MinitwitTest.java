@@ -2,11 +2,16 @@ package zerodowntime;
 
 import io.javalin.Javalin;
 import okhttp3.*;
-
+import org.jooq.DSLContext;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
+
+import io.prometheus.client.Counter;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
+import java.io.StringWriter;
 
 import java.io.IOException;
 import java.util.ArrayList;

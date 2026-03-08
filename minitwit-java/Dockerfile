@@ -13,7 +13,8 @@ COPY pom.xml .
 COPY src ./src
 
 # If you want tests to run as well during the build, then delete the "DskipTests" flag
-RUN mvn -DskipTests package
+RUN mvn -DskipTests -Dmaven.test.compile.skip=true package
+# RUN mvn -DskipTests package
 
 # RUNTIME OF CONTAINER
 FROM eclipse-temurin:21-jre
@@ -26,4 +27,3 @@ COPY --from=build /app/target/minitwit-java-*.jar /app/app.jar
 EXPOSE 7070
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]
-

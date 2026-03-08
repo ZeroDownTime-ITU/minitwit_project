@@ -2,6 +2,11 @@
 # vi: set ft=ruby :
 
 Vagrant.configure("2") do |config|
+  if ["up", "provision", "destroy", "ssh", "halt"].include?(ARGV[0]) && ARGV[1].nil?
+    puts "Error: please specify a VM name: 'vagrant #{ARGV[0]} minitwit' or 'vagrant #{ARGV[0]} test'"
+    exit 1
+  end
+  
   config.vm.box = 'digital_ocean'
   config.ssh.private_key_path = '~/.ssh/id_ed25519'
 
@@ -18,7 +23,7 @@ Vagrant.configure("2") do |config|
       provider.ssh_key_name = ENV["SSH_KEY_NAME"] 
       provider.image = "ubuntu-22-04-x64"
       provider.region = "fra1"
-      provider.size = "s-1vcpu-1gb"
+      provider.size = "s-2vcpu-4gb"
       provider.setup = false 
       provider.volumes = [
         "59c8825b-13df-11f1-9b32-0a58ac12e5cc"
@@ -28,7 +33,35 @@ Vagrant.configure("2") do |config|
     minitwit.vm.provision "shell", path: "provision.sh", env: {
       "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
       "RESERVED_IP"       => "46.101.70.51",
-      "DOMAIN"            => "zerodt.live"
+      "DOMAIN"            => "zerodt.live",
+      "VOLUME_NUMBER"       => "01"
+    }
+  end
+
+  config.vm.define "test" do |test|
+    test.vm.synced_folder "./remote_files", "/minitwit", type: "rsync"
+
+    test.vm.provider :digital_ocean do |provider, override|
+      override.nfs.functional = false
+      override.vm.allowed_synced_folder_types = :rsync
+
+      provider.monitoring = true
+      provider.token = ENV["DIGITAL_OCEAN_KEY"]
+      provider.ssh_key_name = ENV["SSH_KEY_NAME"]
+      provider.image = "ubuntu-22-04-x64"
+      provider.region = "fra1"
+      provider.size = "s-1vcpu-1gb"
+      provider.setup = false
+      provider.volumes = [
+        "c79b54eb-197d-11f1-a59c-0a58ac12ea84" 
+    ]
+    end
+
+    test.vm.provision "shell", path: "provision.sh", env: {
+      "DIGITAL_OCEAN_KEY" => ENV["DIGITAL_OCEAN_KEY"],
+      "RESERVED_IP"       => "164.90.240.44",
+      "DOMAIN"            => "minitwit.app",
+      "VOLUME_NUMBER"       => "02"
     }
   end
 end

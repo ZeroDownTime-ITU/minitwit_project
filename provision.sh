@@ -47,7 +47,7 @@ sudo systemctl enable docker
 
 # EXTRA CHECK TO SEE IF THAT ENV FILE IS THERE (I PRAY)
 if [ ! -f /minitwit/.env ]; then 
-    echo "Missing environment file. Copy it brother just as written in the ".env.template" file"
+    echo "Missing environment file. Copy it brother just as written in the ".env.template" file. Destroy the droplet and try again"
     exit 1
 fi
 

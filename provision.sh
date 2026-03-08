@@ -12,9 +12,14 @@ DROPLET_ID=$(curl -s http://169.254.169.254/metadata/v1/id)
 doctl compute reserved-ip-action assign $RESERVED_IP $DROPLET_ID --access-token $DO_TOKEN || echo "IP already assigned"
 
 # 2. MOUNTING
-mkdir -p /mnt/volume_fra1_01
-mountpoint -q /mnt/volume_fra1_01 || mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01
-grep -q "volume_fra1_01" /etc/fstab || echo '/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-01 /mnt/volume_fra1_01 ext4 defaults,nofail,discard 0 0' | tee -a /etc/fstab
+mkdir -p /mnt/volume_fra1_${VOLUME_NUMBER}
+mountpoint -q /mnt/volume_fra1_01 || mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-${VOLUME_NUMBER} /mnt/volume_fra1_${VOLUME_NUMBER}
+grep -q "volume_fra1_01" /etc/fstab || echo "/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-${VOLUME_NUMBER} /mnt/volume_fra1_${VOLUME_NUMBER} ext4 defaults,nofail,discard 0 0" | tee -a /etc/fstab
+
+# SET .ENV VARIABLES FOR DOCKER-COMPOSE.YML
+echo "" >> /minitwit/.env
+echo "DOMAIN=${DOMAIN}" >> /minitwit/.env
+echo "VOLUME_NUMBER=${VOLUME_NUMBER}" >> /minitwit/.env
 
 # 3. ADD SSH KEYS
 grep -q "mono@monolith" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6lS3hLYIvcWHKP3zsh2K6SZBOQJWNwBQspdptT8/Fq mono@monolith" >> /root/.ssh/authorized_keys
@@ -29,16 +34,15 @@ chmod +x /minitwit/deploy.sh
 # The following address an issue in DO's Ubuntu images, which still contain a lock file
 sudo killall apt apt-get 2>/dev/null || true
 sudo rm -f /var/lib/dpkg/lock-frontend
-echo "Waiting for apt lock..."
-while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
-      fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
-    sleep 5
-done
 sudo apt-get update
-
 
 # 4. INSTALL DOCKER & COMPOSE
 if ! command -v docker &> /dev/null; then
+    echo "Waiting for apt lock before Docker install..."
+    while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1 || \
+        fuser /var/lib/apt/lists/lock >/dev/null 2>&1; do
+        sleep 5
+    done
     DEBIAN_FRONTEND=noninteractive curl -fsSL https://get.docker.com | sh
 fi
 sudo usermod -aG docker root
@@ -70,20 +74,20 @@ fi
 
 # 7. GET CERTS IF NEEDED
 # Check if certs already exist on the volume
-if [ ! -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+if [ ! -f "/mnt/volume_fra1_${VOLUME_NUMBER}/letsencrypt/live/${DOMAIN}/fullchain.pem" ]; then
     echo "No certs found. Requesting initial certs..."
     docker compose run --rm -T --entrypoint certbot certbot certonly \
         --webroot -w /var/www/certbot \
-        -d $DOMAIN -d www.$DOMAIN \
+        -d ${DOMAIN} -d www.${DOMAIN} \
         --email your@email.com --agree-tos --no-eff-email
     echo "Certs issued successfully."
 else
     echo "Certs already exist, skipping certbot."
 fi
 
-# 8. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2)
-if [ -f "/mnt/volume_fra1_01/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
-    cp /minitwit/nginx-ssl.conf /minitwit/nginx.conf
+# 8. SWAP NGINX TO SSL CONFIG (HTTPS&HTTP2) AND SET DOMAIN VARIABLE
+if [ -f "/mnt/volume_fra1_${VOLUME_NUMBER}/letsencrypt/live/$DOMAIN/fullchain.pem" ]; then
+    sed "s/\${DOMAIN}/${DOMAIN}/g" /minitwit/nginx-ssl.conf > /minitwit/nginx.conf
     docker compose exec -T nginx nginx -s reload
 fi
 

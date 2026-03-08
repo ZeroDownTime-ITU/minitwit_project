@@ -69,25 +69,22 @@ services:
       - app-network
 
   prometheus:
-      build:
-        context: ./monitoring/prometheus
-        dockerfile: Dockerfile
-      volumes:
-        - ./prometheus.yml:/etc/prometheus/prometheus.yml
-        - /mnt/volume_fra1_01/prometheus_data:/prometheus
-      ports:
-        - "9090:9090"
-      networks:
-        - app-network
+    image: despotheanimal/minitwit-prometheus:latest
+    volumes:
+      - /mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
 
   grafana:
-    build:
-      context: ./monitoring/grafana
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+    image: grafana/grafana:latest
+    expose:
+      - "3000"
+    environment:
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/grafana/
     volumes:
-      - /mnt/volume_fra1_01/grafana_data:/var/lib/grafana
+      - /mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data:/var/lib/grafana
       - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
       - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
     networks:
@@ -107,6 +104,3 @@ services:
 networks:
   app-network:
     driver: bridge
-
-volumes:
-  grafana-storage: {}

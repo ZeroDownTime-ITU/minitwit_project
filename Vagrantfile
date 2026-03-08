@@ -6,6 +6,7 @@ Vagrant.configure("2") do |config|
     puts "Error: please specify a VM name: 'vagrant #{ARGV[0]} minitwit' or 'vagrant #{ARGV[0]} test'"
     exit 1
   end
+  
   config.vm.box = 'digital_ocean'
   config.ssh.private_key_path = '~/.ssh/id_ed25519'
 

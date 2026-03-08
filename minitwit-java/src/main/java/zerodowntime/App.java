@@ -90,12 +90,16 @@ public class App {
 
             config.routes.after(ctx -> {
                 String method = ctx.method().toString();
-                String path = ctx.path();
+                String path = ctx.endpoints().lastHttpEndpoint().path;
                 String status = String.valueOf(ctx.status().getCode());
+
+                // Likely a bot or unmatched route if path is null
+                if (path == null) {
+                    path = "unmatched_route";
+                }
 
                 requestCounter.labels(method, path, status).inc();
 
-                // add this
                 Long startTime = ctx.attribute("startTime");
                 if (startTime != null) {
                     long duration = System.currentTimeMillis() - startTime;

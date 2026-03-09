@@ -3,6 +3,9 @@ package zerodowntime.controller.simulator;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.javalin.http.Context;
 import io.javalin.openapi.HttpMethod;
 import io.javalin.openapi.OpenApi;
@@ -21,6 +24,7 @@ public class SimulatorController {
     private UserService userService;
     private MessageService messageService;
 
+    private static final Logger log = LoggerFactory.getLogger(SimulatorController.class);
     private static final AtomicInteger latestValue = new AtomicInteger(0);
 
     public SimulatorController(AuthService authService, UserService userService, MessageService messageService) {
@@ -71,9 +75,8 @@ public class SimulatorController {
             int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
             ctx.json(messageService.getRecentMessages(limit));
-        } catch (Exception e) {
-            System.err.println("[getRecentMessages] Error: " + e.getMessage());
-            e.printStackTrace();
+        } catch (Exception ex) {
+            log.error("[getRecentMessages] Error: {}", ex.getMessage(), ex);            
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -102,14 +105,13 @@ public class SimulatorController {
             String username = ctx.pathParam("username");
             int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
-            Integer userId = getUserOrAbort(ctx, username);
+            Integer userId = getUserOrAbort(ctx, username, "getMessagesUser");
             if (userId == null) return;
 
             ctx.json(messageService.getMessagesForUser(username, limit));
         }
-        catch (Exception e) {
-            System.err.println("[getMessagesUser] Error: " + e.getMessage());
-            e.printStackTrace();
+        catch (Exception ex) {
+            log.error("[getMessagesUser] Error: {}", ex.getMessage(), ex);            
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -138,16 +140,15 @@ public class SimulatorController {
             String username = ctx.pathParam("username");
             int limit = ctx.queryParamAsClass("no", Integer.class).getOrDefault(100);
 
-            Integer userId = getUserOrAbort(ctx, username);
+            Integer userId = getUserOrAbort(ctx, username, "getFollowers");
             if (userId == null) return;
 
             List<String> followingNames = userService.getUserFollowing(username, limit);
 
             ctx.json(new FollowsResponse(followingNames));
         }
-        catch (Exception e) {
-            System.err.println("[getFollowers] Error: " + e.getMessage());
-            e.printStackTrace();
+        catch (Exception ex) {
+            log.error("[getFollowers] Error: {}", ex.getMessage(), ex);            
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -177,12 +178,13 @@ public class SimulatorController {
             String username = ctx.pathParam("username");
             FollowAction action = ctx.bodyAsClass(FollowAction.class);
 
-            Integer userId = getUserOrAbort(ctx, username);
+            Integer userId = getUserOrAbort(ctx, username, "postFollow");
             if (userId == null) return;
 
             if (action.follow() != null) {
                 Integer userIdToFollow = userService.getUserIdByUsername(action.follow());
                 if (userIdToFollow == null) {
+                    log.error("[postFollow] Follow target not found: {}", action.follow());
                     ctx.status(404);
                     return;
                 }
@@ -191,6 +193,7 @@ public class SimulatorController {
             } else if (action.unfollow() != null) {
                 Integer userIdToUnfollow = userService.getUserIdByUsername(action.unfollow());
                 if (userIdToUnfollow == null) {
+                    log.error("[postFollow] Unfollow target not found: {}", action.unfollow());
                     ctx.status(404);
                     return;
                 }
@@ -200,9 +203,8 @@ public class SimulatorController {
 
             ctx.status(204);
         }
-        catch (Exception e) {
-            System.err.println("[postFollow] Error: " + e.getMessage());
-            e.printStackTrace();
+        catch (Exception ex) {
+            log.error("[postFollow] Error: {}", ex.getMessage(), ex);            
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -228,10 +230,9 @@ public class SimulatorController {
             RegisterRequest request = ctx.bodyAsClass(RegisterRequest.class);
             authService.registerUser(request.username(), request.email(), request.pwd());
             ctx.status(204);
-        } catch (IllegalArgumentException e) {
-            System.err.println("[postRegister] Error: " + e.getMessage());
-            e.printStackTrace();
-            ctx.status(400).json(new ErrorResponse(400, e.getMessage()));
+        } catch (IllegalArgumentException ex) {
+            log.error("[postRegister] Error: {}", ex.getMessage(), ex);            
+            ctx.status(400).json(new ErrorResponse(400, ex.getMessage()));
         }
     }
 
@@ -259,16 +260,15 @@ public class SimulatorController {
         PostMessage payload = ctx.bodyAsClass(PostMessage.class);
 
         try {
-            Integer userId = getUserOrAbort(ctx, username);
+            Integer userId = getUserOrAbort(ctx, username, "postMessage");
             if (userId == null) return;
 
             messageService.addMessage(userId, payload.content());
 
             ctx.status(204);
-        } catch (Exception e) {
-            System.err.println("[postMessage] Error: " + e.getMessage());
-            e.printStackTrace();
-            ctx.status(403).json(new ErrorResponse(403, "Could not post message")); // same here, should be 400;
+        } catch (Exception ex) {
+            log.error("[postMessage] Error: {}", ex.getMessage(), ex);            
+            ctx.status(403).json(new ErrorResponse(403, "Could not post message"));
         }
     }
 
@@ -277,8 +277,8 @@ public class SimulatorController {
         if (latestParam != null) {
             try {
                 latestValue.set(Integer.parseInt(latestParam));
-            } catch (NumberFormatException e) {
-                System.err.println("[updateLatest] Invalid 'latest' parameter: " + latestParam);
+            } catch (NumberFormatException ex) {
+                log.error("[updateLatest] Error: {}", ex.getMessage(), ex);            
             }
         }
     }
@@ -286,17 +286,17 @@ public class SimulatorController {
     private boolean isAuthorized(Context ctx) {
         String authHeader = ctx.header("Authorization");
         if (authHeader == null || !authHeader.equals("Basic c2ltdWxhdG9yOnN1cGVyX3NhZmUh")) {
-            System.err.println("[isAuthorized] Unauthorized request from: " + ctx.ip());
+            log.warn("[isAuthorized] Unauthorized request from: {}", ctx.ip(), ctx.path());
             ctx.status(403).json(new ErrorResponse(403, "Unauthorized - Must include correct Authorization header"));
             return false;
         }
         return true;
     }
 
-    private Integer getUserOrAbort(Context ctx, String username) {
+    private Integer getUserOrAbort(Context ctx, String username, String caller) {
         Integer userId = userService.getUserIdByUsername(username);
         if (userId == null) {
-            System.err.println("[getUserOrAbort] User not found: " + username);
+            log.error("[{}] User not found: {}", caller, username);
             ctx.status(404);
             return null;
         }

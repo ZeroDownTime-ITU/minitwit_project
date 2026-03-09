@@ -112,6 +112,16 @@ jobs:
             ${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:${{ needs.tag.outputs.new_tag }}
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache,mode=max
+      
+      # ONLY NEEDED ONCE CAN DELETE AFTER FIRST DEPLOYMENT
+      - name: Build and push minitwit-prometheus image
+        uses: docker/build-push-action@v6
+        with:
+          context: ./monitoring/prometheus
+          file: ./monitoring/prometheus/Dockerfile
+          push: true
+          platforms: linux/amd64
+          tags: ${{ secrets.DOCKER_USERNAME }}/minitwit-prometheus:latest
 
       - name: Configure SSH
         run: |

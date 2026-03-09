@@ -3,6 +3,9 @@ package zerodowntime;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.*;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import zerodowntime.constants.AppConstants.PublicApi;
@@ -19,9 +22,29 @@ import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
 import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
+import io.prometheus.client.Counter;
+import io.prometheus.client.Histogram;
+import io.prometheus.client.CollectorRegistry;
+import io.prometheus.client.exporter.common.TextFormat;
+import io.prometheus.client.hotspot.DefaultExports;
+import java.io.StringWriter;
 
 public class App {
+    private static final Logger log = LoggerFactory.getLogger(App.class);
+
+    private static final Counter requestCounter = Counter.build()
+            .name("minitwit_http_requests_total")
+            .help("Total HTTP requests")
+            .labelNames("method", "path", "status")
+            .register();
+    private static final Histogram requestDuration = Histogram.build()
+            .name("http_request_duration_seconds")
+            .help("HTTP request duration")
+            .labelNames("method", "path", "status")
+            .register();
+
     public static void main(String[] args) {
+        DefaultExports.initialize();
         DatabaseManager.init();
         createApp(DatabaseManager.getDsl()).start("0.0.0.0", 7070);
         System.out.println("Server started on http://0.0.0.0:7070");
@@ -59,6 +82,10 @@ public class App {
 
             config.concurrency.useVirtualThreads = false; // Disable virtual threads for better compatibility with JDBC
 
+            config.routes.before("/*", ctx -> {
+                ctx.attribute("startTime", System.currentTimeMillis());
+            });
+
             config.routes.before("/web/*", ctx -> {
                 Integer userId = ctx.sessionAttribute("user_id");
                 if (userId != null) {
@@ -66,9 +93,23 @@ public class App {
                 }
             });
 
-            config.routes.exception(Exception.class, (e, ctx) -> {
-                System.err.println("[unhandled] " + e.getMessage());
-                e.printStackTrace();
+            config.routes.after(ctx -> {
+                String method = ctx.method().toString();
+                var lastEndpoint = ctx.endpoints().lastHttpEndpoint();
+                String path = lastEndpoint != null ? lastEndpoint.path : "unmatched_route";
+                String status = String.valueOf(ctx.status().getCode());
+
+                requestCounter.labels(method, path, status).inc();
+
+                Long startTime = ctx.attribute("startTime");
+                if (startTime != null) {
+                    long duration = System.currentTimeMillis() - startTime;
+                    requestDuration.labels(method, path, status).observe(duration / 1000.0);
+                }
+            });
+
+            config.routes.exception(Exception.class, (ex, ctx) -> {
+                log.error("[unhandled] {} {}: {}", ctx.method(), ctx.path(), ex.getMessage(), ex);
                 ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
             });
 
@@ -98,6 +139,14 @@ public class App {
                 post(SimulatorApi.FLLWS_USER, simController::postFollow);
                 get(SimulatorApi.MSGS, simController::getRecentMessages);
                 get(SimulatorApi.MSGS_USER, simController::getMessagesUser);
+
+                get("/metrics", ctx -> {
+                    StringWriter sw = new StringWriter();
+                    TextFormat.write004(sw, CollectorRegistry.defaultRegistry.metricFamilySamples());
+                    ctx.contentType(TextFormat.CONTENT_TYPE_004);
+                    ctx.result(sw.toString());
+                });
+
             });
         });
 

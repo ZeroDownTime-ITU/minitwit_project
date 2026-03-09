@@ -68,6 +68,29 @@ services:
     networks:
       - app-network
 
+  prometheus:
+    image: despotheanimal/minitwit-prometheus:latest
+    volumes:
+      - /mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+    networks:
+      - app-network
+
+  grafana:
+    image: grafana/grafana:latest
+    expose:
+      - "3000"
+    environment:
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/grafana/
+    volumes:
+      - /mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - app-network
+
+
   certbot:
     image: certbot/certbot
     restart: always

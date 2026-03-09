@@ -184,7 +184,7 @@ public class SimulatorController {
             if (action.follow() != null) {
                 Integer userIdToFollow = userService.getUserIdByUsername(action.follow());
                 if (userIdToFollow == null) {
-                    log.warn("[postFollow] Follow target not found: {}", action.follow());
+                    log.error("[postFollow] Follow target not found: {}", action.follow());
                     ctx.status(404);
                     return;
                 }
@@ -193,7 +193,7 @@ public class SimulatorController {
             } else if (action.unfollow() != null) {
                 Integer userIdToUnfollow = userService.getUserIdByUsername(action.unfollow());
                 if (userIdToUnfollow == null) {
-                    log.warn("[postFollow] Unfollow target not found: {}", action.unfollow());
+                    log.error("[postFollow] Unfollow target not found: {}", action.unfollow());
                     ctx.status(404);
                     return;
                 }

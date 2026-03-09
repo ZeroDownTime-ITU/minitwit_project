@@ -113,7 +113,6 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache,mode=max
       
-      # ONLY NEEDED ONCE CAN DELETE AFTER FIRST DEPLOYMENT
       - name: Build and push minitwit-prometheus image
         uses: docker/build-push-action@v6
         with:

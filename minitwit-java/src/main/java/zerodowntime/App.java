@@ -3,6 +3,9 @@ package zerodowntime;
 import io.javalin.Javalin;
 import static io.javalin.apibuilder.ApiBuilder.*;
 import org.jooq.DSLContext;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
 import zerodowntime.constants.AppConstants.PublicApi;
@@ -27,12 +30,14 @@ import io.prometheus.client.hotspot.DefaultExports;
 import java.io.StringWriter;
 
 public class App {
-    static final Counter requestCounter = Counter.build()
+    private static final Logger log = LoggerFactory.getLogger(App.class);
+
+    private static final Counter requestCounter = Counter.build()
             .name("minitwit_http_requests_total")
             .help("Total HTTP requests")
             .labelNames("method", "path", "status")
             .register();
-    static final Histogram requestDuration = Histogram.build()
+    private static final Histogram requestDuration = Histogram.build()
             .name("http_request_duration_seconds")
             .help("HTTP request duration")
             .labelNames("method", "path", "status")
@@ -90,13 +95,9 @@ public class App {
 
             config.routes.after(ctx -> {
                 String method = ctx.method().toString();
-                String path = ctx.endpoints().lastHttpEndpoint().path;
+                var lastEndpoint = ctx.endpoints().lastHttpEndpoint();
+                String path = lastEndpoint != null ? lastEndpoint.path : "unmatched_route";
                 String status = String.valueOf(ctx.status().getCode());
-
-                // Likely a bot or unmatched route if path is null
-                if (path == null) {
-                    path = "unmatched_route";
-                }
 
                 requestCounter.labels(method, path, status).inc();
 
@@ -107,9 +108,8 @@ public class App {
                 }
             });
 
-            config.routes.exception(Exception.class, (e, ctx) -> {
-                System.err.println("[unhandled] " + e.getMessage());
-                e.printStackTrace();
+            config.routes.exception(Exception.class, (ex, ctx) -> {
+                log.error("[unhandled] {} {}: {}", ctx.method(), ctx.path(), ex.getMessage(), ex);
                 ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
             });
 

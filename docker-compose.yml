@@ -59,9 +59,7 @@ services:
       - java-backend
 
   grafana:
-    build:
-      context: ./monitoring/grafana
-      dockerfile: Dockerfile
+    image: grafana/grafana:latest
     volumes:
       - grafana_data:/var/lib/grafana
     ports:

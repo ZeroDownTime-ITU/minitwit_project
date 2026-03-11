@@ -6,6 +6,9 @@ import org.jooq.impl.DSL;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
+import com.zaxxer.hikari.metrics.prometheus.PrometheusMetricsTrackerFactory;
+
+import io.prometheus.client.CollectorRegistry;
 
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -20,8 +23,10 @@ public class DatabaseManager {
     }
 
     public static void init() {
+        CollectorRegistry registry = CollectorRegistry.defaultRegistry;
         HikariConfig config = new HikariConfig();
         config.setJdbcUrl(System.getenv("JDBC_URL"));
+        config.setPoolName("primary-pool");
         config.setUsername(System.getenv("JDBC_USER"));
         config.setPassword(System.getenv("JDBC_PASS"));
 
@@ -31,6 +36,7 @@ public class DatabaseManager {
         config.setConnectionTimeout(3000); // Wait 3s max for a connection, then error out
         config.setIdleTimeout(600000); // 10 minutes
         config.setMaxLifetime(1800000); // 30 minutes
+        config.setMetricsTrackerFactory(new PrometheusMetricsTrackerFactory(registry)); // Setup metrics for prometheus
 
         dataSource = new HikariDataSource(config);
         dslContext = DSL.using(dataSource, SQLDialect.POSTGRES);

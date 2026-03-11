@@ -17,7 +17,5 @@ docker compose pull java-backend svelte-frontend prometheus
 docker compose down java-backend svelte-frontend nginx prometheus
 docker compose up -d java-backend svelte-frontend nginx prometheus
 
-# start prometheus node exporter for server hardware specs
-bash /minitwit/start-node-exporter.sh
 
 echo "Deploy complete! Running version ${VERSION}"

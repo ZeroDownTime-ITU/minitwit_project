@@ -7,3 +7,7 @@ scrape_configs:
     static_configs:
       - targets: ['java-backend:7070']
     metrics_path: '/metrics'
+
+  - job_name: 'pagespeed_exporter'
+    static_configs:
+      - targets: ['pagespeed-exporter:9271']

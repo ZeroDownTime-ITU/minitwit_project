@@ -66,6 +66,16 @@ services:
       - "3000:3000"
     depends_on:
       - prometheus
+      
+  pagespeed-exporter:
+  image: foomo/pagespeed_exporter
+  container_name: pagespeed-exporter
+  restart: unless-stopped
+  ports:
+    - "9271:9271"
+  environment:
+    PAGESPEED_API_KEY: ${PAGESPEED_API_KEY}
+    PAGESPEED_TARGETS: ${PAGESPEED_TARGETS}
 
 volumes:
   prometheus_data: 

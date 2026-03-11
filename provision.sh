@@ -26,6 +26,7 @@ grep -q "volume_fra1_01" /etc/fstab || echo "/dev/disk/by-id/scsi-0DO_Volume_vol
     echo "" >> /minitwit/.env
     echo "DOMAIN=${DOMAIN}" >> /minitwit/.env
     echo "VOLUME_NUMBER=${VOLUME_NUMBER}" >> /minitwit/.env
+    echo PAGESPEED_API_KEY=${PAGESPEED_API_KEY} >> /minitwit/.env
 
 # 3. ADD SSH KEYS
 grep -q "mono@monolith" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIE6lS3hLYIvcWHKP3zsh2K6SZBOQJWNwBQspdptT8/Fq mono@monolith" >> /root/.ssh/authorized_keys

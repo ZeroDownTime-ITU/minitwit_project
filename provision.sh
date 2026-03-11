@@ -35,7 +35,8 @@ grep -q "jbul@itu.dk" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC
 grep -q "mathias@minitwit" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDMW7+/L+y8iZqzIMKEDcu+WY1Jq5AtIW7a//OhTknoa mathias@minitwit" >> /root/.ssh/authorized_keys
 
 grep -q "cd /minitwit" /root/.bashrc || echo "cd /minitwit" >> /root/.bashrc
-chmod +x /minitwit/deploy.sh 
+chmod +x /minitwit/deploy.sh
+chmod +x /minitwit/start-node-exporter.sh
 
 # The following address an issue in DO's Ubuntu images, which still contain a lock file
 sudo killall apt apt-get 2>/dev/null || true

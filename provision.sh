@@ -35,7 +35,7 @@ grep -q "jbul@itu.dk" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC
 grep -q "mathias@minitwit" /root/.ssh/authorized_keys || echo "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDMW7+/L+y8iZqzIMKEDcu+WY1Jq5AtIW7a//OhTknoa mathias@minitwit" >> /root/.ssh/authorized_keys
 
 grep -q "cd /minitwit" /root/.bashrc || echo "cd /minitwit" >> /root/.bashrc
-chmod +x /minitwit/deploy.sh 
+chmod +x /minitwit/deploy.sh
 
 # The following address an issue in DO's Ubuntu images, which still contain a lock file
 sudo killall apt apt-get 2>/dev/null || true
@@ -97,4 +97,25 @@ if [ -f "/mnt/volume_fra1_${VOLUME_NUMBER}/letsencrypt/live/$DOMAIN/fullchain.pe
     docker compose exec -T nginx nginx -s reload
 fi
 
+# 9. INSTALL NODE EXPORTER
+
+wget -qO- https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz | tar xzf - -C /usr/local/bin --strip-components=1 node_exporter-1.8.1.linux-amd64/node_exporter
+
+cat > /etc/systemd/system/node_exporter.service <<EOF
+[Unit]
+Description=Node Exporter
+After=network.target
+
+[Service]
+ExecStart=/usr/local/bin/node_exporter
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable --now node_exporter
+
+# provision complete. 
 echo "Provisioning complete!"

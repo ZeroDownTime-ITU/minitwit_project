@@ -1,6 +1,8 @@
 > A Twitter clone built and deployed as part of the DevOps course at ITU (Spring 2026).
 
-🔗 **Live:** [zerodt.live](http://zerodt.live)
+🔗 **Live:** [zerodt.live](http://zerodt.live) 
+
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/08a89c1b91024097882dca6e9351f7a9)](https://app.codacy.com/gh/ZeroDownTime-ITU/minitwit_project/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ---
 

@@ -124,9 +124,9 @@ The simulator API exposes the following endpoints:
 ---
 
 ## Repository Structure
-```
+
 ![ER Diagram](diagrams/er_diagram.svg)
-```
+
 ```
 minitwit/
 ├── src/                    # Backend source code (Javalin)

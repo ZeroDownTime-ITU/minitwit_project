@@ -125,7 +125,7 @@ The simulator API exposes the following endpoints:
 
 ## Repository Structure
 ```
-TODO: This is just a template update it 
+![ER Diagram](diagrams/er_diagram.svg)
 ```
 ```
 minitwit/

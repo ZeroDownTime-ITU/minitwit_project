@@ -47,7 +47,7 @@ public class App {
         DefaultExports.initialize();
         DatabaseManager.init();
         createApp(DatabaseManager.getDsl()).start("0.0.0.0", 7070);
-        System.out.println("Server started on http://0.0.0.0:7070");
+        log.info("Server started on http://0.0.0.0:7070");
     }
 
     public static Javalin createApp(DSLContext dsl) {

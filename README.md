@@ -125,7 +125,7 @@ The simulator API exposes the following endpoints:
 
 ## Repository Structure
 ```
-![ER Diagram] (diagrams/ZeroDT Minitwit Database Diagram.drawio-2.svg)
+![ER Diagram](diagrams/er_diagram.svg)
 ```
 ```
 minitwit/

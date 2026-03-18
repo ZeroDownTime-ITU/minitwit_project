@@ -75,9 +75,12 @@ The application will be available at `http://localhost:<port>`.
 ---
 
 ## CI/CD Pipeline
-```
-TODO: This is just a template update it 
-```
+
+Our GitHub Actions workflow handles:
+
+1. **Build** — Compile and build Docker images
+2. **Test** — Run unit and integration tests
+3. **Deploy** — Push images and deploy to DigitalOcean droplet
 
 ---
 

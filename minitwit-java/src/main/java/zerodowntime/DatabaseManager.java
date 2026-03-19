@@ -17,7 +17,7 @@ import java.nio.charset.StandardCharsets;
 import javax.sql.DataSource;
 
 public class DatabaseManager {
-    private static final Logger log = LoggerFactory.getLogger(App.class);
+    private static final Logger log = LoggerFactory.getLogger(DatabaseManager.class);
     private static DSLContext dslContext;
     private static HikariDataSource dataSource;
 

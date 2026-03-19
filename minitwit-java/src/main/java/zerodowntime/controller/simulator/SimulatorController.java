@@ -47,7 +47,7 @@ public class SimulatorController {
         try {
             ctx.json(new LatestValue(latestValue.get()));
         } catch (Exception e) {
-            log.error("[getLatest] Error: " + e.getMessage());
+            log.error("[getLatest] Error: {}", e.getMessage());
             e.printStackTrace();
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }

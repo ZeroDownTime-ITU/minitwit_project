@@ -66,8 +66,8 @@ public class DatabaseManager {
             }
 
             log.info("Database schema verified/initialized via jOOQ.");
-        } catch (Exception e) {
-            log.error("Schema Initialization Error: " + e.getMessage());
+        } catch (Exception ex) {
+            log.error("Schema Initialization Error: {}", ex.getMessage(), ex);
         }
     }
 }

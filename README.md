@@ -44,14 +44,53 @@ MiniTwit is an old Python app we've rebuilt using Java, Docker, and modern DevOp
 ---
 
 ## Architecture
-
-<!-- Insert architecture/component diagram here (UML, Mermaid, or image) -->
-
+```mermaid
+graph TD
+    Client["Browser / Client"]
+    subgraph Presentation["Presentation Layer"]
+        Svelte["Svelte Frontend (nginx)"]
+    end
+    subgraph API["API Layer"]
+        Javalin["Javalin App"]
+        subgraph WEB["Web Requests"]
+            AuthCtrl["Auth Controller"]
+            UserCtrl["User Controller"]
+            TmlCtrl["Timeline Controller"]
+        end
+        subgraph SIM["Simulator Requests"]
+            SimCtrl["Simulator Controller"]
+        end
+    end
+    subgraph Business["Business Layer"]
+        AuthService["Auth Service"]
+        UserService["User Service"]
+        MsgService["Message Service"]
+        TmlService["Timeline Service"]
+    end
+    subgraph Data["Data Layer"]
+        FlwRepo["Follower Repository"]
+        UserRepo["User Repository"]
+        MsgRepo["Message Repository"]
+        DB[("PostgreSQL")]
+    end
+    subgraph Monitoring["Monitoring"]
+        NodeExporter["Node Exporter"]
+        Prometheus["Prometheus"]
+        Grafana["Grafana"]
+    end
+    Client --> Svelte
+    Svelte --> Javalin
+    Javalin --> WEB
+    Javalin --> SIM
+    WEB --> Business
+    SIM --> Business
+    Business --> Data
+    NodeExporter --> Prometheus
+    Prometheus --> Grafana
+    Javalin -->|metrics| Prometheus
 ```
-TODO: Add architecture diagram
-```
 
-Brief description of how the components interact: reverse proxy → backend → database, monitoring sidecar, etc.
+Brief description of how the components interact here.
 
 ---
 

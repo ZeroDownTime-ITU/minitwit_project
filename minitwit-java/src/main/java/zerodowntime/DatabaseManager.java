@@ -3,6 +3,8 @@ package zerodowntime;
 import org.jooq.DSLContext;
 import org.jooq.SQLDialect;
 import org.jooq.impl.DSL;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
@@ -15,6 +17,7 @@ import java.nio.charset.StandardCharsets;
 import javax.sql.DataSource;
 
 public class DatabaseManager {
+    private static final Logger log = LoggerFactory.getLogger(DatabaseManager.class);
     private static DSLContext dslContext;
     private static HikariDataSource dataSource;
 
@@ -62,9 +65,9 @@ public class DatabaseManager {
                 }
             }
 
-            System.out.println("Database schema verified/initialized via jOOQ.");
-        } catch (Exception e) {
-            System.err.println("Schema Initialization Error: " + e.getMessage());
+            log.info("Database schema verified/initialized via jOOQ.");
+        } catch (Exception ex) {
+            log.error("Schema Initialization Error: {}", ex.getMessage(), ex);
         }
     }
 }

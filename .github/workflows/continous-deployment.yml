@@ -5,6 +5,11 @@ on:
     branches:
       - main
       - master
+    paths:
+      - 'minitwit-java/**'
+      - 'minitwit-svelte/**'
+      - 'monitoring/prometheus/**'
+      - 'remote_files/**'
   workflow_dispatch:
 
 permissions:

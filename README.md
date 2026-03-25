@@ -166,6 +166,12 @@ The simulator API exposes the following endpoints:
 | POST   | `/register`           | Register a new user         |
 | GET    | `/latest`             | Get latest processed command|
 
+### Access
+
+- Swagger: [zerodt.live/swagger](https://zerodt.live/swagger#/) 
+
+---
+
 <!-- Expand with request/response examples if needed -->
 
 ---

@@ -72,6 +72,7 @@ public class App {
             config.registerPlugin(new OpenApiPlugin(openApi -> {
                 openApi.withDefinitionConfiguration((version, builder) -> {
                     builder.info(info -> info.title("Minitwit API").version("1.0.0"));
+                    builder.withBasicAuth();
                 });
             }));
 

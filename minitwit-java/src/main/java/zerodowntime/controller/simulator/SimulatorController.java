@@ -13,6 +13,7 @@ import io.javalin.openapi.OpenApiContent;
 import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
+import io.javalin.openapi.OpenApiSecurity;
 import zerodowntime.dto.simulator.*;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
@@ -62,7 +63,7 @@ public class SimulatorController {
             @OpenApiParam(name = "latest", type = Integer.class, description = "Optional: latest value to update"),
             @OpenApiParam(name = "no", type = Integer.class, description = "Optional: limits result count")
         },
-        headers = { @OpenApiParam(name = "Authorization", description = "Basic simulator auth", required = true) },
+        security = { @OpenApiSecurity(name = "BasicAuth") },
         responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(from = Message.class)),
             @OpenApiResponse(status = "403", content = @OpenApiContent(from = ErrorResponse.class))
@@ -91,7 +92,7 @@ public class SimulatorController {
             @OpenApiParam(name = "latest", type = Integer.class, description = "Optional: latest value to update"),
             @OpenApiParam(name = "no", type = Integer.class, description = "Optional: limits result count")
         },
-        headers = { @OpenApiParam(name = "Authorization", description = "Basic simulator auth", required = true) },
+        security = { @OpenApiSecurity(name = "BasicAuth") },
         responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(from = Message.class)),
             @OpenApiResponse(status = "403", content = @OpenApiContent(from = ErrorResponse.class)),
@@ -126,7 +127,7 @@ public class SimulatorController {
             @OpenApiParam(name = "latest", type = Integer.class, description = "Optional: latest value to update"),
             @OpenApiParam(name = "no", type = Integer.class, description = "Optional: limits result count")
         },
-        headers = { @OpenApiParam(name = "Authorization", description = "Basic simulator auth", required = true) },
+        security = { @OpenApiSecurity(name = "BasicAuth") },
         responses = {
             @OpenApiResponse(status = "200", content = @OpenApiContent(from = FollowsResponse.class)),
             @OpenApiResponse(status = "403", content = @OpenApiContent(from = ErrorResponse.class)),
@@ -162,7 +163,7 @@ public class SimulatorController {
         queryParams = {
             @OpenApiParam(name = "latest", type = Integer.class, description = "Optional: latest value to update")
         },
-        headers = { @OpenApiParam(name = "Authorization", description = "Basic simulator auth", required = true) },
+        security = { @OpenApiSecurity(name = "BasicAuth") },
         requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = FollowAction.class), required = true),
         responses = {
             @OpenApiResponse(status = "204", description = "No Content"),
@@ -245,7 +246,7 @@ public class SimulatorController {
         queryParams = {
             @OpenApiParam(name = "latest", type = Integer.class, description = "Optional: latest value to update")
         },
-        headers = { @OpenApiParam(name = "Authorization", description = "Basic simulator auth", required = true) },
+        security = { @OpenApiSecurity(name = "BasicAuth") },
         requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = PostMessage.class), required = true),
         responses = {
             @OpenApiResponse(status = "204", description = "No Content"),

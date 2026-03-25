@@ -12,6 +12,9 @@ else
   echo "VERSION=${VERSION}" >> .env
 fi
 
+# Start everything that isn't running yet (in case of newly added containers)
+docker compose up -d
+
 # Pull new image before we stop anything
 docker compose pull java-backend svelte-frontend prometheus
 docker compose down java-backend svelte-frontend nginx prometheus

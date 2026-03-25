@@ -143,7 +143,7 @@ TODO: This is just a template update it
 - System resource usage (CPU, memory)
 - Database query performance
 
-### Access
+### Grafana Access
 
 - Grafana: [zerodt.live/grafana](https://zerodt.live/grafana/) 
 
@@ -165,6 +165,12 @@ The simulator API exposes the following endpoints:
 | POST   | `/fllws/<username>`   | Follow/unfollow a user      |
 | POST   | `/register`           | Register a new user         |
 | GET    | `/latest`             | Get latest processed command|
+
+### Swagger Access
+
+- Swagger: [zerodt.live/swagger](https://zerodt.live/swagger#/) 
+
+---
 
 <!-- Expand with request/response examples if needed -->
 

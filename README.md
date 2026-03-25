@@ -44,6 +44,9 @@ MiniTwit is an old Python app we've rebuilt using Java, Docker, and modern DevOp
 ---
 
 ## Architecture
+<details>
+<summary>Architecture Diagram (click to expand)</summary>
+    
 ```mermaid
 graph TD
     Client["Browser / Client"]
@@ -89,7 +92,7 @@ graph TD
     Prometheus --> Grafana
     Javalin -->|metrics| Prometheus
 ```
-
+</details>
 Brief description of how the components interact here.
 
 ---

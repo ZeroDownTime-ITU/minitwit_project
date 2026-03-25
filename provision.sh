@@ -16,11 +16,13 @@ mkdir -p /mnt/volume_fra1_${VOLUME_NUMBER}
 mountpoint -q /mnt/volume_fra1_01 || mount -o discard,defaults,noatime /dev/disk/by-id/scsi-0DO_Volume_volume-fra1-${VOLUME_NUMBER} /mnt/volume_fra1_${VOLUME_NUMBER}
 grep -q "volume_fra1_01" /etc/fstab || echo "/dev/disk/by-id/scsi-0DO_Volume_volume-fra1-${VOLUME_NUMBER} /mnt/volume_fra1_${VOLUME_NUMBER} ext4 defaults,nofail,discard 0 0" | tee -a /etc/fstab
 
-    # 2.1 CREATE DIR FOR PROMETHEUS AND GRAFANA, GIVE WRITE PERMISSION
-    mkdir -p /mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data
-    mkdir -p /mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data
-    chown -R 65534:65534 /mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data
-    chown -R 472:472 /mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data
+    # 2.1 CREATE DIR FOR PROMETHEUS, GRAFANA AND LOKI, GIVE WRITE PERMISSION
+    mkdir -p "/mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data"
+    mkdir -p "/mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data"
+    mkdir -p "/mnt/volume_fra1_${VOLUME_NUMBER}/loki_data"
+    chown -R 65534:65534 "/mnt/volume_fra1_${VOLUME_NUMBER}/prometheus_data"
+    chown -R 472:472 "/mnt/volume_fra1_${VOLUME_NUMBER}/grafana_data"
+    chown -R 10001:10001 "/mnt/volume_fra1_${VOLUME_NUMBER}/loki_data"
 
     # 2.1 SET .ENV VARIABLES FOR DOCKER-COMPOSE.YML
     echo "" >> /minitwit/.env

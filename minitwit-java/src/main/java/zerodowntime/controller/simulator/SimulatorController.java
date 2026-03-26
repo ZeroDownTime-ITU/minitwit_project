@@ -167,6 +167,7 @@ public class SimulatorController {
         requestBody = @OpenApiRequestBody(content = @OpenApiContent(from = FollowAction.class), required = true),
         responses = {
             @OpenApiResponse(status = "204", description = "No Content"),
+            @OpenApiResponse(status = "400", content = @OpenApiContent(from = ErrorResponse.class)),
             @OpenApiResponse(status = "403", content = @OpenApiContent(from = ErrorResponse.class)),
             @OpenApiResponse(status = "404", description = "User not found")
         }
@@ -178,6 +179,11 @@ public class SimulatorController {
         try {
             String username = ctx.pathParam("username");
             FollowAction action = ctx.bodyAsClass(FollowAction.class);
+
+            if (action.follow() == null && action.unfollow() == null) {
+                ctx.status(400).json(new ErrorResponse(400, "Must provide follow or unfollow"));
+                return;
+            }
 
             Integer userId = getUserOrAbort(ctx, username, "postFollow");
             if (userId == null) return;

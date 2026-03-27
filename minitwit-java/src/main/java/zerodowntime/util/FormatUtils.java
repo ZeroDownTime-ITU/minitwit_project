@@ -17,6 +17,7 @@ public class FormatUtils {
 
     public static String getGravatarUrl(String email, int size) {
         try {
+            @SuppressWarnings("java:S4790") // MD5 required by Gravatar API, not used for security
             MessageDigest md = MessageDigest.getInstance("MD5");
             byte[] hash = md.digest(email.trim().toLowerCase().getBytes(StandardCharsets.UTF_8));
             StringBuilder hex = new StringBuilder();

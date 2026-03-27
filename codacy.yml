@@ -1,0 +1,2 @@
+exclude_paths:
+  - "minitwit-java/api-simulator/**"

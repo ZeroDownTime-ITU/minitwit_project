@@ -18,3 +18,7 @@ CREATE TABLE IF NOT EXISTS message (
   pub_date BIGINT,
   flagged INTEGER DEFAULT 0
 );
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
+CREATE INDEX IF NOT EXISTS idx_message_flagged_pubdate ON message (flagged, pub_date DESC);
+CREATE INDEX IF NOT EXISTS idx_message_author_pubdate ON message (author_id, pub_date DESC);

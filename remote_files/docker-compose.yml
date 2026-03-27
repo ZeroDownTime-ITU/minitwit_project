@@ -29,6 +29,7 @@ services:
       - JDBC_USER=${POSTGRES_USER}
       - JDBC_PASS=${POSTGRES_PASSWORD}
       - JAVA_TOOL_OPTIONS=-Djdk.tracePinnedThreads=full
+      - TZ=Europe/Copenhagen # Otherwise log timestaps 1 hour behind (UTC)
     depends_on:
       postgres-db:
         condition: service_healthy

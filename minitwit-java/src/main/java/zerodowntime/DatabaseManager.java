@@ -55,17 +55,17 @@ public class DatabaseManager {
 
     public static int getLatest() {
         return getDsl()
-            .select(DSL.field("value", Integer.class))
+            .select(DSL.field("state_value", Integer.class))
             .from(DSL.table("simulator_state"))
-            .where(DSL.field("key").eq("latest"))
-            .fetchOne(DSL.field("value", Integer.class));
+            .where(DSL.field("state_key").eq("latest"))
+            .fetchOne(DSL.field("state_value", Integer.class));
     }
 
     public static void setLatest(int value) {
         getDsl()
             .update(DSL.table("simulator_state"))
-            .set(DSL.field("value", Integer.class), value)
-            .where(DSL.field("key").eq("latest"))
+            .set(DSL.field("state_value", Integer.class), value)
+            .where(DSL.field("state_key").eq("latest"))
             .execute();
     }
 

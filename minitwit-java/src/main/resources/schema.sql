@@ -20,14 +20,14 @@ CREATE TABLE IF NOT EXISTS message (
 );
 
 CREATE TABLE IF NOT EXISTS simulator_state (
-  key   VARCHAR(50) PRIMARY KEY,
-  value INTEGER     NOT NULL DEFAULT 0
+  state_key   VARCHAR(50) PRIMARY KEY,
+  state_value INTEGER     NOT NULL DEFAULT 0
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_message_flagged_pubdate ON message (flagged, pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_message_author_pubdate ON message (author_id, pub_date DESC);
 
-INSERT INTO simulator_state (key, value)
+INSERT INTO simulator_state (state_key, state_value)
 VALUES ('latest', 0)
-ON CONFLICT (key) DO NOTHING;
+ON CONFLICT (staete_key) DO NOTHING;

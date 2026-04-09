@@ -45,6 +45,7 @@ public class DatabaseManager {
         dslContext = DSL.using(dataSource, SQLDialect.POSTGRES);
 
         initializeSchema();
+        seedSimulatorState();
     }
 
     public static DSLContext getDsl() {
@@ -54,11 +55,12 @@ public class DatabaseManager {
     }
 
     public static int getLatest() {
-        return getDsl()
+        Integer result = getDsl()
             .select(DSL.field("state_value", Integer.class))
             .from(DSL.table("simulator_state"))
             .where(DSL.field("state_key").eq("latest"))
             .fetchOne(DSL.field("state_value", Integer.class));
+        return result != null ? result : 0;
     }
 
     public static void setLatest(int value) {
@@ -84,6 +86,21 @@ public class DatabaseManager {
             log.info("Database schema verified/initialized via jOOQ.");
         } catch (Exception ex) {
             log.error("Schema Initialization Error: {}", ex.getMessage(), ex);
+        }
+    }
+
+    private static void seedSimulatorState() {
+        int updated = getDsl()
+            .update(DSL.table("simulator_state"))
+            .set(DSL.field("state_value", Integer.class), 0)
+            .where(DSL.field("state_key").eq("latest"))
+            .execute();
+        if (updated == 0) {
+            getDsl()
+                .insertInto(DSL.table("simulator_state"))
+                .columns(DSL.field("state_key"), DSL.field("state_value", Integer.class))
+                .values("latest",0)
+                .execute();
         }
     }
 }

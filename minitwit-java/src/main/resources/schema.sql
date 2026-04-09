@@ -27,7 +27,3 @@ CREATE TABLE IF NOT EXISTS simulator_state (
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_message_flagged_pubdate ON message (flagged, pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_message_author_pubdate ON message (author_id, pub_date DESC);
-
-INSERT INTO simulator_state (state_key, state_value)
-VALUES ('latest', 0)
-ON CONFLICT (state_key) DO NOTHING;

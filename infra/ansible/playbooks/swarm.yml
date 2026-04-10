@@ -1,0 +1,29 @@
+- name: Init swarm on first manager
+  hosts: swarm[0]
+  become: true
+
+  tasks:
+    - name: Init Docker Swarm
+      shell: docker swarm init --advertise-addr {{ ansible_host }}
+      register: swarm_init
+      ignore_errors: yes
+
+    - name: Get worker join token
+      shell: docker swarm join-token worker -q
+      register: worker_token
+
+    - name: Get manager join token
+      shell: docker swarm join-token manager -q
+      register: manager_token
+
+- name: Join remaining nodes as managers
+  hosts: swarm[1:]
+  become: true
+
+  tasks:
+    - name: Join swarm as manager
+      shell: >
+        docker swarm join
+        --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}
+        {{ hostvars[groups['swarm'][0]].ansible_host }}:2377
+      ignore_errors: yes

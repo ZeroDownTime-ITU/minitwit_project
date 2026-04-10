@@ -1,0 +1,33 @@
+- name: Deploy app stack
+  hosts: swarm
+  become: true
+  tasks:
+    - name: Create nginx config directory
+      file:
+        path: /etc/nginx/conf.d
+        state: directory
+
+    - name: Copy nginx config
+      copy:
+        src: ../../../config/nginx.conf
+        dest: /etc/nginx/conf.d/default.conf
+
+- name: Deploy stack
+  hosts: swarm[0] # Swarm distributes across all nodes automatically
+  become: true
+  vars_files:
+    - vars/secrets.yml
+
+  tasks:
+    - name: Copy app compose file
+      copy:
+        src: ../../../docker-compose.app.yml
+        dest: /root/docker-compose.app.yml
+
+    - name: Deploy stack
+      shell: docker stack deploy -c /root/docker-compose.app.yml minitwit
+      environment:
+        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].ansible_host }}:5432/minitwitdb"
+        POSTGRES_USER: "{{ postgres_user }}"
+        POSTGRES_PASSWORD: "{{ postgres_password }}"
+        VERSION: "latest"

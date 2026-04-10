@@ -18,6 +18,11 @@
         state: started
         enabled: yes
 
+    - name: Install Docker Compose plugin
+      apt:
+        name: docker-compose-plugin
+        state: present
+
     - name: Install node exporter
       unarchive:
         src: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
@@ -47,3 +52,29 @@
         state: started
         enabled: yes
         daemon_reload: yes
+
+- name: Setup alloy on non-monitoring nodes
+  hosts: swarm,db
+  become: true
+
+  tasks:
+    - name: Create alloy config directory
+      file:
+        path: /etc/alloy
+        state: directory
+
+    - name: Copy alloy config
+      template:
+        src: ../../../monitoring/alloy-config.alloy.j2
+        dest: /etc/alloy/config.alloy
+
+    - name: Run alloy container
+      docker_container:
+        name: alloy
+        image: grafana/alloy:latest
+        state: started
+        restart_policy: always
+        volumes:
+          - /etc/alloy/config.alloy:/etc/alloy/config.alloy
+          - /var/lib/docker/containers:/var/lib/docker/containers:ro
+          - /var/run/docker.sock:/var/run/docker.sock

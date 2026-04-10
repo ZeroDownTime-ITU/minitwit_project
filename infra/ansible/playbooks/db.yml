@@ -1,0 +1,40 @@
+- name: Setup database
+  hosts: db
+  become: true
+  vars_files:
+    - vars/secrets.yml
+
+  tasks:
+    - name: Create mount point
+      file:
+        path: /mnt/volume-db
+        state: directory
+
+    - name: Mount volume
+      mount:
+        path: /mnt/volume-db
+        src: /dev/sda
+        fstype: ext4
+        opts: discard,defaults,noatime
+        state: mounted
+
+    - name: Create postgres data directory
+      file:
+        path: /mnt/volume-db/postgres_data
+        state: directory
+        mode: '0755' # set file permissions
+
+    - name: Run postgres container
+      docker_container:
+        name: postgres
+        image: postgres:15-alpine
+        state: started
+        restart_policy: always
+        env:
+          POSTGRES_USER: "{{ postgres_user }}"
+          POSTGRES_PASSWORD: "{{ postgres_password }}"
+          POSTGRES_DB: "{{ postgres_db }}"
+        volumes:
+          - /mnt/volume-db/postgres_data:/var/lib/postgresql/data
+        ports:
+          - "5432:5432"

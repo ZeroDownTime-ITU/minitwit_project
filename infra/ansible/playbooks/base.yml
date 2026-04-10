@@ -7,6 +7,10 @@
       apt:
         update_cache: yes
 
+    - name: Wait for apt lock to be released
+      shell: while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+      changed_when: false
+
     - name: Install Docker
       shell: curl -fsSL https://get.docker.com | sh
       args:
@@ -52,12 +56,7 @@
         state: started
         enabled: yes
         daemon_reload: yes
-
-- name: Setup alloy on non-monitoring nodes
-  hosts: swarm,db
-  become: true
-
-  tasks:
+    
     - name: Create alloy config directory
       file:
         path: /etc/alloy
@@ -68,6 +67,11 @@
         src: ../../../monitoring/alloy-config.alloy.j2
         dest: /etc/alloy/config.alloy
 
+- name: Setup alloy on non-monitoring nodes
+  hosts: swarm,db
+  become: true
+
+  tasks:
     - name: Run alloy container
       docker_container:
         name: alloy

@@ -1,7 +1,7 @@
 package zerodowntime.controller.simulator;
 
 import java.util.List;
-
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,7 +14,6 @@ import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 import io.javalin.openapi.OpenApiSecurity;
-import zerodowntime.DatabaseManager;
 import zerodowntime.dto.simulator.*;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
@@ -27,7 +26,7 @@ public class SimulatorController {
     private MessageService messageService;
 
     private static final Logger log = LoggerFactory.getLogger(SimulatorController.class);
-    
+    private static final AtomicInteger latestValue = new AtomicInteger(0);
 
     public SimulatorController(AuthService authService, UserService userService, MessageService messageService) {
         this.authService = authService;
@@ -47,9 +46,10 @@ public class SimulatorController {
     )
     public void getLatest(Context ctx) {
         try {
-            ctx.json(new LatestValue(DatabaseManager.getLatest()));
+            ctx.json(new LatestValue(latestValue.get()));
         } catch (Exception e) {
             log.error("[getLatest] Error: {}", e.getMessage());
+            e.printStackTrace();
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -283,7 +283,7 @@ public class SimulatorController {
         String latestParam = ctx.queryParam("latest");
         if (latestParam != null) {
             try {
-                DatabaseManager.setLatest(Integer.parseInt(latestParam));
+                latestValue.set(Integer.parseInt(latestParam));
             } catch (NumberFormatException ex) {
                 log.error("[updateLatest] Error: {}", ex.getMessage(), ex);            
             }

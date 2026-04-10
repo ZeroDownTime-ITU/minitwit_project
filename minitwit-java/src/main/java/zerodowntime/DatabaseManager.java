@@ -53,22 +53,6 @@ public class DatabaseManager {
         return dslContext;
     }
 
-    public static int getLatest() {
-        return getDsl()
-            .select(DSL.field("state_value", Integer.class))
-            .from(DSL.table("simulator_state"))
-            .where(DSL.field("state_key").eq("latest"))
-            .fetchOne(DSL.field("state_value", Integer.class));
-    }
-
-    public static void setLatest(int value) {
-        getDsl()
-            .update(DSL.table("simulator_state"))
-            .set(DSL.field("state_value", Integer.class), value)
-            .where(DSL.field("state_key").eq("latest"))
-            .execute();
-    }
-
     private static void initializeSchema() {
         try (InputStream is = DatabaseManager.class.getResourceAsStream("/schema.sql")) {
             if (is == null)

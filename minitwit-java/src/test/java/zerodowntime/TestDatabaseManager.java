@@ -8,12 +8,13 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.UUID;
 
 public class TestDatabaseManager {
 
     public static DSLContext createTestDatabase() {
         // Unique name per call
-        String uniqueDb = "testdb_" + java.util.UUID.randomUUID().toString().replace("-", "");
+        String uniqueDb = "testdb_" + UUID.randomUUID().toString().replace("-", "");
 
         String url = "jdbc:h2:mem:" + uniqueDb
                 + ";MODE=PostgreSQL"

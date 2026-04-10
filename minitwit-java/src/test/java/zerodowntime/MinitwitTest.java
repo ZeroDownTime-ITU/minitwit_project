@@ -5,6 +5,7 @@ import okhttp3.*;
 
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
+
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
 
@@ -27,11 +28,14 @@ public class MinitwitTest {
     @BeforeEach
     public void setUp() {
         DSLContext db = TestDatabaseManager.createTestDatabase();
+        DatabaseManager.initWithDsl(db);
 
         app = App.createApp(db).start(TEST_PORT);
 
         client = createTestClient();
         http = new TestHelper(client, BASE_URL);
+
+       
     }
 
     @AfterEach
@@ -60,7 +64,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testRegister() throws IOException {
+    void testRegister() throws IOException {
         RegisterRequest req = new RegisterRequest("user1", "u1@ex.com", "abc", "abc");
 
         try (Response res = http.postJson(PublicApi.REGISTER, req)) {
@@ -103,7 +107,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testLoginLogout() throws IOException {
+    void testLoginLogout() throws IOException {
         // Register using DTO
         RegisterRequest registerReq = new RegisterRequest("user1", "u1@ex.com", "default", "default");
         http.postJson(PublicApi.REGISTER, registerReq).close();
@@ -148,7 +152,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testMessageRecording() throws IOException {
+    void testMessageRecording() throws IOException {
         registerAndLogin("foo", "f@ex.com", "abc");
 
         // Post messages using DTOs
@@ -173,7 +177,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testTimelines() throws IOException {
+    void testTimelines() throws IOException {
         // Create foo user
         registerAndLogin("foo", "f@ex.com", "abc");
         http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("the message by foo")).close();
@@ -223,7 +227,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testUnauthorizedAccess() throws IOException {
+    void testUnauthorizedAccess() throws IOException {
         try (Response res = http.postJson(PublicApi.POSTMESSAGE, new MessageRequest("unauthorized"))) {
             assertThat(res.code()).isEqualTo(401);
         }
@@ -238,7 +242,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testNonexistentUserProfile() throws IOException {
+    void testNonexistentUserProfile() throws IOException {
         registerAndLogin("user1", "u1@ex.com", "abc");
 
         try (Response res = http.get(PublicApi.USER_PROFILE + "/nonexistentuser")) {
@@ -256,5 +260,58 @@ public class MinitwitTest {
                 new RegisterRequest(username, email, password, password)).close();
         http.postJson(PublicApi.LOGIN,
                 new LoginRequest(username, password)).close();
+    }
+
+    @Test
+    void testSimulatorLatest() throws IOException {
+        String auth = okhttp3.Credentials.basic("simulator", "super_safe!");
+
+        // Initial latest should be 0
+        Request getLatest = new Request.Builder()
+            .url(BASE_URL + "/api/latest")
+            .build();
+
+        try (Response res = client.newCall(getLatest).execute()) {
+            assertThat(res.code()).isEqualTo(200);
+            assertThat(res.body().string()).contains("\"latest\":0");
+        }
+
+        // Hit a simulator endpoint with ?latest=42 to update it
+        Request registerWithLatest = new Request.Builder()
+            .url(BASE_URL + "/api/register?latest=42")
+            .post(RequestBody.create(
+                "{\"username\":\"simuser\",\"email\":\"s@ex.com\",\"pwd\":\"pass\"}",
+                MediaType.parse("application/json")))
+            .header("Authorization", auth)
+            .build();
+
+        try (Response res = client.newCall(registerWithLatest).execute()) {
+            assertThat(res.code()).isIn(204, 400); // 400 is fine if user exists
+        }
+
+        // Latest should now be 42
+        try (Response res = client.newCall(getLatest).execute()) {
+            assertThat(res.code()).isEqualTo(200);
+            assertThat(res.body().string()).contains("\"latest\":42");
+        }
+
+        // Update again via a different endpoint
+        Request registerWithLatest2 = new Request.Builder()
+            .url(BASE_URL + "/api/register?latest=100")
+            .post(RequestBody.create(
+                "{\"username\":\"simuser2\",\"email\":\"s2@ex.com\",\"pwd\":\"pass\"}",
+                MediaType.parse("application/json")))
+            .header("Authorization", auth)
+            .build();
+
+        try (Response res = client.newCall(registerWithLatest2).execute()) {
+            assertThat(res.code()).isIn(204, 400);
+        }
+
+        // Latest should now be 100
+        try (Response res = client.newCall(getLatest).execute()) {
+            assertThat(res.code()).isEqualTo(200);
+            assertThat(res.body().string()).contains("\"latest\":100");
+        }
     }
 }

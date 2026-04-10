@@ -17,21 +17,49 @@ MiniTwit is a microblogging application built and operated as part of the MSc De
 ## Architecture
 
 ```mermaid
-    ---
-    config:
-    layout: elk
-    ---
-    flowchart TB
-        Browser["Browser"] -- HTTPS :443 / HTTP :80 --> nginx["nginx"]
-        nginx -- / → :80 --> svelte-frontend["svelte-frontend"]
-        nginx -- /api  /web → :7070 --> java-backend["java-backend"]
-        certbot["certbot"] -. renew every 12h .-> letsencrypt-volume["letsencrypt-volume"]
-        java-backend -- JDBC :5432 --> postgres-db["postgres-db"]
-        prometheus["prometheus"] -- scrape /metrics every 5s --> java-backend
-        prometheus -- scrape :9100 --> node-exporter["node-exporter"]
-        grafana["grafana"] -- query --> prometheus & loki["loki"]
-        alloy["alloy"] -- collect container logs --> loki
-        nginx -. read TLS certs .-> letsencrypt-volume
+---
+config:
+  layout: dagre
+---
+flowchart TB
+ subgraph s1["Layer 1"]
+        Browser["Browser"]
+  end
+ subgraph s2["Layer 2"]
+        nginx["nginx"]
+        certbot["certbot"]
+        grafana["grafana"]
+        alloy["alloy"]
+  end
+ subgraph s3["Layer 3"]
+        svelte-frontend["svelte-frontend"]
+        prometheus["prometheus"]
+        loki["loki"]
+        letsencrypt-volume["letsencrypt-volume"]
+  end
+ subgraph s4["Layer 4"]
+        java-backend["java-backend"]
+        node-exporter["node-exporter"]
+  end
+ subgraph s5["Layer 5"]
+        postgres-db["postgres-db"]
+  end
+    Browser -- HTTPS :443 / HTTP :80 --> nginx
+    nginx -- /api  /web → :7070 --> java-backend
+    nginx -- / → :80 --> svelte-frontend
+    nginx -. read TLS certs .-> letsencrypt-volume
+    certbot -. renew every 12h .-> letsencrypt-volume
+    java-backend -- JDBC :5432 --> postgres-db
+    prometheus -- scrape /metrics every 5s --> java-backend
+    prometheus -- scrape :9100 --> node-exporter
+    grafana -- query --> prometheus & loki
+    alloy -- collect container logs --> loki
+
+    style s1 stroke:transparent,fill:transparent,color:transparent
+    style s5 stroke:transparent,fill:transparent,color:transparent
+    style s4 stroke:transparent,fill:transparent,color:transparent
+    style s3 stroke:transparent,fill:transparent,color:transparent
+    style s2 stroke:transparent,fill:transparent,color:transparent
 ```
 
 Incoming traffic hits nginx, which terminates TLS (Let's Encrypt, HTTP/2) and routes requests: `/` to the Svelte static frontend, `/api` and `/web` to the Java backend, and `/grafana/` to the Grafana instance. The Java backend connects to PostgreSQL over JDBC. Prometheus scrapes the Java app's `/metrics` endpoint every 5 seconds and the host via node_exporter. Grafana Alloy tails Docker container logs and ships them to Loki; Grafana queries both Prometheus and Loki for dashboards and log exploration.

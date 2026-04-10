@@ -54,11 +54,6 @@
         src: ../../../monitoring/prometheus.yml.j2
         dest: /monitoring/prometheus.yml
 
-    - name: Generate alloy config
-      template:
-        src: ../../../monitoring/alloy-config.alloy.j2
-        dest: /etc/alloy/config.alloy
-
     - name: Copy docker-compose file
       copy:
         src: ../../../docker-compose.monitoring.yml

@@ -5,6 +5,8 @@ import okhttp3.*;
 
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
+import org.junit.platform.commons.function.Try;
+
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
 
@@ -256,5 +258,54 @@ public class MinitwitTest {
                 new RegisterRequest(username, email, password, password)).close();
         http.postJson(PublicApi.LOGIN,
                 new LoginRequest(username, password)).close();
+    }
+
+    @Test
+    public void testSimulatorLatest() throws IOException {
+        String auth = okhttp3.Credentials.basic("simulator", "super_secure1!");
+
+        //Initialized latest = 0
+        Request getLatest = new Request.Builder()
+            .url(BASE_URL + "/api/latest")
+            .build();
+
+        try (Response res = client.newCall(getLatest).execute()) {
+            assertThat(res.code()).isEqualTo(200);
+            assertThat(res.body().string().contains("\"latest\":0"));
+        }
+
+        //update latest = 42
+        Request registerWithLatest = new Request.Builder()
+            .url(BASE_URL + "/api/register?latest=42")
+            .post(RequestBody.create(
+                "{\"username\":\"simuser\",\"email\":\"su@ex.com\",\"pwd\":\"pass\"}",
+                MediaType.parse("application/json")))
+            .header("Authorization", auth)
+            .build();
+        
+            try (Response res = client.newCall(registerWithLatest).execute()) {
+                assertThat(res.code()).isIn(204,400);
+            }
+
+            try (Response res = client.newCall(getLatest).execute()) {
+                assertThat(res.code()).isEqualTo("200");
+                assertThat(res.body().string().contains("\"latest\":42"));
+            }
+
+            //update latest through /msgs endpoint
+            Request msgsWithLatest = new Request.Builder()
+                .url(BASE_URL + "/api/msgs?latest=1000&no=10")
+                .header("Authorization", auth)
+                .build();
+
+            try (Response res = client.newCall(msgsWithLatest).execute()) {
+                assertThat(res.code()).isEqualTo(200);
+            }
+
+            // latest should be 100
+            try (Response res = client.newCall(getLatest).execute()) {
+                assertThat(res.code()).isEqualTo("200");
+                assertThat(res.body().string().contains("\"latest\":100"));
+            }
     }
 }

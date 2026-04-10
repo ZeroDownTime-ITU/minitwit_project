@@ -5,7 +5,6 @@ import okhttp3.*;
 
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.*;
-import org.junit.platform.commons.function.Try;
 
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.dto.web.*;
@@ -264,7 +263,7 @@ public class MinitwitTest {
     }
 
     @Test
-    public void testSimulatorLatest() throws IOException {
+    void testSimulatorLatest() throws IOException {
         String auth = okhttp3.Credentials.basic("simulator", "super_safe!");
 
         // Initial latest should be 0

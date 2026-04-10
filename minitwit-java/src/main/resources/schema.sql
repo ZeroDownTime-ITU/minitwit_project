@@ -19,6 +19,11 @@ CREATE TABLE IF NOT EXISTS message (
   flagged INTEGER DEFAULT 0
 );
 
+CREATE TABLE IF NOT EXISTS simulator_state (
+  state_key   TEXT PRIMARY KEY,
+  state_value INTEGER     NOT NULL DEFAULT 0
+);
+
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_message_flagged_pubdate ON message (flagged, pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_message_author_pubdate ON message (author_id, pub_date DESC);

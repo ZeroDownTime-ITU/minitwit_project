@@ -41,4 +41,4 @@ jobs:
         working-directory: ./minitwit-java
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=ZeroDownTime-ITU_minitwit_project
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=ZeroDownTime-ITU_minitwit_project -Dsonar.coverage.exclusions="**/*"

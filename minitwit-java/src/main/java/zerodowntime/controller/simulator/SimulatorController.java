@@ -1,7 +1,6 @@
 package zerodowntime.controller.simulator;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -14,6 +13,7 @@ import io.javalin.openapi.OpenApiParam;
 import io.javalin.openapi.OpenApiRequestBody;
 import io.javalin.openapi.OpenApiResponse;
 import io.javalin.openapi.OpenApiSecurity;
+import zerodowntime.DatabaseManager;
 import zerodowntime.dto.simulator.*;
 import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
@@ -21,12 +21,11 @@ import zerodowntime.service.UserService;
 
 // @formatter:off
 public class SimulatorController {
+    private static final Logger log = LoggerFactory.getLogger(SimulatorController.class);
+
     private AuthService authService;
     private UserService userService;
     private MessageService messageService;
-
-    private static final Logger log = LoggerFactory.getLogger(SimulatorController.class);
-    private static final AtomicInteger latestValue = new AtomicInteger(0);
 
     public SimulatorController(AuthService authService, UserService userService, MessageService messageService) {
         this.authService = authService;
@@ -46,10 +45,9 @@ public class SimulatorController {
     )
     public void getLatest(Context ctx) {
         try {
-            ctx.json(new LatestValue(latestValue.get()));
+            ctx.json(new LatestValue(DatabaseManager.getLatest()));
         } catch (Exception e) {
             log.error("[getLatest] Error: {}", e.getMessage());
-            e.printStackTrace();
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -77,7 +75,7 @@ public class SimulatorController {
 
             ctx.json(messageService.getRecentMessages(limit));
         } catch (Exception ex) {
-            log.error("[getRecentMessages] Error: {}", ex.getMessage(), ex);            
+            log.error("[getRecentMessages] Error: {}", ex.getMessage(), ex);
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -110,9 +108,8 @@ public class SimulatorController {
             if (userId == null) return;
 
             ctx.json(messageService.getMessagesForUser(username, limit));
-        }
-        catch (Exception ex) {
-            log.error("[getMessagesUser] Error: {}", ex.getMessage(), ex);            
+        } catch (Exception ex) {
+            log.error("[getMessagesUser] Error: {}", ex.getMessage(), ex);
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -147,9 +144,8 @@ public class SimulatorController {
             List<String> followingNames = userService.getUserFollowing(username, limit);
 
             ctx.json(new FollowsResponse(followingNames));
-        }
-        catch (Exception ex) {
-            log.error("[getFollowers] Error: {}", ex.getMessage(), ex);            
+        } catch (Exception ex) {
+            log.error("[getFollowers] Error: {}", ex.getMessage(), ex);
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -209,9 +205,8 @@ public class SimulatorController {
             }
 
             ctx.status(204);
-        }
-        catch (Exception ex) {
-            log.error("[postFollow] Error: {}", ex.getMessage(), ex);            
+        } catch (Exception ex) {
+            log.error("[postFollow] Error: {}", ex.getMessage(), ex);
             ctx.status(500).json(new ErrorResponse(500, "Internal server error"));
         }
     }
@@ -238,7 +233,7 @@ public class SimulatorController {
             authService.registerUser(request.username(), request.email(), request.pwd());
             ctx.status(204);
         } catch (IllegalArgumentException ex) {
-            log.error("[postRegister] Error: {}", ex.getMessage(), ex);            
+            log.error("[postRegister] Error: {}", ex.getMessage(), ex);
             ctx.status(400).json(new ErrorResponse(400, ex.getMessage()));
         }
     }
@@ -274,7 +269,7 @@ public class SimulatorController {
 
             ctx.status(204);
         } catch (Exception ex) {
-            log.error("[postMessage] Error: {}", ex.getMessage(), ex);            
+            log.error("[postMessage] Error: {}", ex.getMessage(), ex);
             ctx.status(403).json(new ErrorResponse(403, "Could not post message"));
         }
     }
@@ -283,9 +278,9 @@ public class SimulatorController {
         String latestParam = ctx.queryParam("latest");
         if (latestParam != null) {
             try {
-                latestValue.set(Integer.parseInt(latestParam));
+                DatabaseManager.setLatest(Integer.parseInt(latestParam));
             } catch (NumberFormatException ex) {
-                log.error("[updateLatest] Error: {}", ex.getMessage(), ex);            
+                log.error("[updateLatest] Error: {}", ex.getMessage(), ex);
             }
         }
     }

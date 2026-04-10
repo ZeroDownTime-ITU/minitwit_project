@@ -1,0 +1,49 @@
+- name: Base setup for all nodes
+  hosts: swarm,db,monitoring
+  become: true
+
+  tasks:
+    - name: Update apt cache
+      apt:
+        update_cache: yes
+
+    - name: Install Docker
+      shell: curl -fsSL https://get.docker.com | sh
+      args:
+        creates: /usr/bin/docker
+
+    - name: Start and enable Docker
+      systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Install node exporter
+      unarchive:
+        src: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+        extra_opts: [--strip-components=1]
+        creates: /usr/local/bin/node_exporter
+
+    - name: Create node exporter systemd service
+      copy:
+        dest: /etc/systemd/system/node_exporter.service
+        content: |
+          [Unit]
+          Description=Node Exporter
+          After=network.target
+
+          [Service]
+          ExecStart=/usr/local/bin/node_exporter
+          Restart=on-failure
+
+          [Install]
+          WantedBy=multi-user.target
+
+    - name: Start and enable node exporter
+      systemd:
+        name: node_exporter
+        state: started
+        enabled: yes
+        daemon_reload: yes

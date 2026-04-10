@@ -18,6 +18,7 @@ resource "digitalocean_droplet" "swarm_node" {
   size     = "s-1vcpu-2gb"
   region   = "fra1"
   ssh_keys = [var.ssh_key_fingerprint]
+  tags   = ["swarm"]
 }
 
 resource "digitalocean_droplet" "db" {
@@ -26,6 +27,7 @@ resource "digitalocean_droplet" "db" {
   size     = "s-1vcpu-2gb"
   region   = "fra1"
   ssh_keys = [var.ssh_key_fingerprint]
+  tags   = ["db"]
 }
 
 resource "digitalocean_droplet" "monitoring" {
@@ -34,11 +36,13 @@ resource "digitalocean_droplet" "monitoring" {
   size     = "s-1vcpu-2gb"
   region   = "fra1"
   ssh_keys = [var.ssh_key_fingerprint]
+  tags   = ["monitoring"]
 }
 
 data "digitalocean_volume" "volume-db" {
   name   = "volume-db"
   region = "fra1"
+
 }
 
 data "digitalocean_volume" "volume-monitoring" {

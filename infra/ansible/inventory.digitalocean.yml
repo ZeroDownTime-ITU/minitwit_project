@@ -1,0 +1,17 @@
+plugin: community.digitalocean.digitalocean
+oauth_token: "{{ lookup('env', 'DIGITAL_OCEAN_KEY') }}"
+attributes:
+  - id
+  - name
+  - networks
+  - region
+  - size_slug
+  - tags
+compose:
+  ansible_host: do_networks.v4 | selectattr('type', 'eq', 'public') | map(attribute='ip_address') | first
+  ansible_user: "'root'"
+  ansible_ssh_private_key_file: "'~/.ssh/id_ed25519'"
+groups:
+  swarm: "'swarm' in do_tags"
+  db: "'db' in do_tags"
+  monitoring: "'monitoring' in do_tags"

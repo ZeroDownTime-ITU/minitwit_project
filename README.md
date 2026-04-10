@@ -17,18 +17,21 @@ MiniTwit is a microblogging application built and operated as part of the MSc De
 ## Architecture
 
 ```mermaid
-graph TD
-    Browser -->|"HTTPS :443 / HTTP :80"| nginx
-    nginx -->|"/ → :80"| svelte-frontend
-    nginx -->|"/api  /web → :7070"| java-backend
-    java-backend -->|"JDBC :5432"| postgres-db
-    prometheus -->|"scrape /metrics every 5s"| java-backend
-    prometheus -->|"scrape :9100"| node-exporter
-    grafana -->|query| prometheus
-    grafana -->|query| loki
-    alloy -->|collect container logs| loki
-    certbot -.->|"renew every 12h"| letsencrypt-volume
-    nginx -.->|read TLS certs| letsencrypt-volume
+    ---
+    config:
+    layout: elk
+    ---
+    flowchart TB
+        Browser["Browser"] -- HTTPS :443 / HTTP :80 --> nginx["nginx"]
+        nginx -- / → :80 --> svelte-frontend["svelte-frontend"]
+        nginx -- /api  /web → :7070 --> java-backend["java-backend"]
+        certbot["certbot"] -. renew every 12h .-> letsencrypt-volume["letsencrypt-volume"]
+        java-backend -- JDBC :5432 --> postgres-db["postgres-db"]
+        prometheus["prometheus"] -- scrape /metrics every 5s --> java-backend
+        prometheus -- scrape :9100 --> node-exporter["node-exporter"]
+        grafana["grafana"] -- query --> prometheus & loki["loki"]
+        alloy["alloy"] -- collect container logs --> loki
+        nginx -. read TLS certs .-> letsencrypt-volume
 ```
 
 Incoming traffic hits nginx, which terminates TLS (Let's Encrypt, HTTP/2) and routes requests: `/` to the Svelte static frontend, `/api` and `/web` to the Java backend, and `/grafana/` to the Grafana instance. The Java backend connects to PostgreSQL over JDBC. Prometheus scrapes the Java app's `/metrics` endpoint every 5 seconds and the host via node_exporter. Grafana Alloy tails Docker container logs and ships them to Loki; Grafana queries both Prometheus and Loki for dashboards and log exploration.

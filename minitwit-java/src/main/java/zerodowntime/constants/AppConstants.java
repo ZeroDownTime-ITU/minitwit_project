@@ -1,6 +1,9 @@
 package zerodowntime.constants;
 
 public class AppConstants {
+    private AppConstants() {
+    } // java quirk
+
     public static final int PER_PAGE = 30;
     public static final String DB_PATH = "data/minitwit-java.db";
 
@@ -9,6 +12,9 @@ public class AppConstants {
      * These use the 'Authorization' header.
      */
     public static class SimulatorApi {
+        private SimulatorApi() {
+        }
+
         public static final String LATEST = "/api/latest";
         public static final String REGISTER = "/api/register";
         public static final String MSGS = "/api/msgs";
@@ -21,6 +27,9 @@ public class AppConstants {
      * These use session-based authentication.
      */
     public static class PublicApi {
+        private PublicApi() {
+        }
+
         public static final String PUBLIC_TIMELINE = "/web/public-timeline";
         public static final String USER_TIMELINE = "/web/user-timeline";
         public static final String USER_PROFILE = "/web/user/{username}";
@@ -39,9 +48,12 @@ public class AppConstants {
      * Database constants for simulator state tracking.
      */
     public static class SimulatorState {
+        private SimulatorState() {
+        }
+
         public static final String TABLE = "simulator_state";
-        public static final String COL_KEY = "state_key"; // NOSONAR
+        public static final String COL_KEY = "state_key"; // NOSONAR codacy:ignore
         public static final String COL_VALUE = "state_value";
-        public static final String KEY_LATEST = "latest"; // NOSONAR
+        public static final String KEY_LATEST = "latest"; // NOSONAR codacy:ignore
     }
 }

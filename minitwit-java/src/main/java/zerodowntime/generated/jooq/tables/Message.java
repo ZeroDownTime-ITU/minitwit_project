@@ -12,6 +12,7 @@ import org.jooq.Condition;
 import org.jooq.Field;
 import org.jooq.ForeignKey;
 import org.jooq.Identity;
+import org.jooq.Index;
 import org.jooq.InverseForeignKey;
 import org.jooq.Name;
 import org.jooq.Path;
@@ -30,6 +31,7 @@ import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
 
+import zerodowntime.generated.jooq.Indexes;
 import zerodowntime.generated.jooq.Keys;
 import zerodowntime.generated.jooq.Public;
 import zerodowntime.generated.jooq.tables.Users.UsersPath;
@@ -145,6 +147,11 @@ public class Message extends TableImpl<MessageRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public List<Index> getIndexes() {
+        return Arrays.asList(Indexes.IDX_MESSAGE_AUTHOR_PUBDATE, Indexes.IDX_MESSAGE_FLAGGED_PUBDATE);
     }
 
     @Override

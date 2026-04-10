@@ -12,9 +12,11 @@ import org.jooq.impl.Internal;
 
 import zerodowntime.generated.jooq.tables.Follower;
 import zerodowntime.generated.jooq.tables.Message;
+import zerodowntime.generated.jooq.tables.SimulatorState;
 import zerodowntime.generated.jooq.tables.Users;
 import zerodowntime.generated.jooq.tables.records.FollowerRecord;
 import zerodowntime.generated.jooq.tables.records.MessageRecord;
+import zerodowntime.generated.jooq.tables.records.SimulatorStateRecord;
 import zerodowntime.generated.jooq.tables.records.UserRecord;
 
 
@@ -29,7 +31,9 @@ public class Keys {
     // UNIQUE and PRIMARY KEY definitions
     // -------------------------------------------------------------------------
 
+    public static final UniqueKey<FollowerRecord> FOLLOWER_PKEY = Internal.createUniqueKey(Follower.FOLLOWER, DSL.name("follower_pkey"), new TableField[] { Follower.FOLLOWER.WHO_ID, Follower.FOLLOWER.WHOM_ID }, true);
     public static final UniqueKey<MessageRecord> MESSAGE_PKEY = Internal.createUniqueKey(Message.MESSAGE, DSL.name("message_pkey"), new TableField[] { Message.MESSAGE.MESSAGE_ID }, true);
+    public static final UniqueKey<SimulatorStateRecord> SIMULATOR_STATE_PKEY = Internal.createUniqueKey(SimulatorState.SIMULATOR_STATE, DSL.name("simulator_state_pkey"), new TableField[] { SimulatorState.SIMULATOR_STATE.STATE_KEY }, true);
     public static final UniqueKey<UserRecord> USERS_PKEY = Internal.createUniqueKey(Users.USERS, DSL.name("users_pkey"), new TableField[] { Users.USERS.USER_ID }, true);
 
     // -------------------------------------------------------------------------

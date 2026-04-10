@@ -13,6 +13,7 @@ import org.jooq.impl.SchemaImpl;
 
 import zerodowntime.generated.jooq.tables.Follower;
 import zerodowntime.generated.jooq.tables.Message;
+import zerodowntime.generated.jooq.tables.SimulatorState;
 import zerodowntime.generated.jooq.tables.Users;
 
 
@@ -40,6 +41,11 @@ public class Public extends SchemaImpl {
     public final Message MESSAGE = Message.MESSAGE;
 
     /**
+     * The table <code>public.simulator_state</code>.
+     */
+    public final SimulatorState SIMULATOR_STATE = SimulatorState.SIMULATOR_STATE;
+
+    /**
      * The table <code>public.users</code>.
      */
     public final Users USERS = Users.USERS;
@@ -62,6 +68,7 @@ public class Public extends SchemaImpl {
         return Arrays.asList(
             Follower.FOLLOWER,
             Message.MESSAGE,
+            SimulatorState.SIMULATOR_STATE,
             Users.USERS
         );
     }

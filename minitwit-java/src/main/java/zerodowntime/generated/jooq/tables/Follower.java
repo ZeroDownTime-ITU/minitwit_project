@@ -24,6 +24,7 @@ import org.jooq.Stringly;
 import org.jooq.Table;
 import org.jooq.TableField;
 import org.jooq.TableOptions;
+import org.jooq.UniqueKey;
 import org.jooq.impl.DSL;
 import org.jooq.impl.SQLDataType;
 import org.jooq.impl.TableImpl;
@@ -58,12 +59,12 @@ public class Follower extends TableImpl<FollowerRecord> {
     /**
      * The column <code>public.follower.who_id</code>.
      */
-    public final TableField<FollowerRecord, Integer> WHO_ID = createField(DSL.name("who_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<FollowerRecord, Integer> WHO_ID = createField(DSL.name("who_id"), SQLDataType.INTEGER.nullable(false), this, "");
 
     /**
      * The column <code>public.follower.whom_id</code>.
      */
-    public final TableField<FollowerRecord, Integer> WHOM_ID = createField(DSL.name("whom_id"), SQLDataType.INTEGER, this, "");
+    public final TableField<FollowerRecord, Integer> WHOM_ID = createField(DSL.name("whom_id"), SQLDataType.INTEGER.nullable(false), this, "");
 
     private Follower(Name alias, Table<FollowerRecord> aliased) {
         this(alias, aliased, (Field<?>[]) null, null);
@@ -128,6 +129,11 @@ public class Follower extends TableImpl<FollowerRecord> {
     @Override
     public Schema getSchema() {
         return aliased() ? null : Public.PUBLIC;
+    }
+
+    @Override
+    public UniqueKey<FollowerRecord> getPrimaryKey() {
+        return Keys.FOLLOWER_PKEY;
     }
 
     @Override

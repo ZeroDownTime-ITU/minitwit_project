@@ -6,6 +6,8 @@
 [![Release](https://img.shields.io/github/v/release/ZeroDownTime-ITU/minitwit_project?style=flat-square)](https://github.com/ZeroDownTime-ITU/minitwit_project/releases/latest)
 [![CI](https://github.com/ZeroDownTime-ITU/minitwit_project/actions/workflows/continous-deployment.yml/badge.svg)](https://github.com/ZeroDownTime-ITU/minitwit_project/actions/workflows/continous-deployment.yml)
 
+[![Codacy Badge](https://app.codacy.com/project/badge/Grade/08a89c1b91024097882dca6e9351f7a9)](https://app.codacy.com/gh/ZeroDownTime-ITU/minitwit_project/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
+
 ---
 
 ## Overview
@@ -16,51 +18,55 @@ MiniTwit is a microblogging application built and operated as part of the MSc De
 
 ## Architecture
 
+<details>
+<summary>Architecture Diagram (click to expand)</summary>
+    
 ```mermaid
----
-config:
-  layout: dagre
----
-flowchart TB
- subgraph s1["Layer 1"]
-        Browser["Browser"]
-  end
- subgraph s2["Layer 2"]
-        nginx["nginx"]
-        certbot["certbot"]
-        grafana["grafana"]
-        alloy["alloy"]
-  end
- subgraph s3["Layer 3"]
-        svelte-frontend["svelte-frontend"]
-        prometheus["prometheus"]
-        loki["loki"]
-        letsencrypt-volume["letsencrypt-volume"]
-  end
- subgraph s4["Layer 4"]
-        java-backend["java-backend"]
-        node-exporter["node-exporter"]
-  end
- subgraph s5["Layer 5"]
-        postgres-db["postgres-db"]
-  end
-    Browser -- HTTPS :443 / HTTP :80 --> nginx
-    nginx -- /api  /web → :7070 --> java-backend
-    nginx -- / → :80 --> svelte-frontend
-    nginx -. read TLS certs .-> letsencrypt-volume
-    certbot -. renew every 12h .-> letsencrypt-volume
-    java-backend -- JDBC :5432 --> postgres-db
-    prometheus -- scrape /metrics every 5s --> java-backend
-    prometheus -- scrape :9100 --> node-exporter
-    grafana -- query --> prometheus & loki
-    alloy -- collect container logs --> loki
-
-    style s1 stroke:transparent,fill:transparent,color:transparent
-    style s5 stroke:transparent,fill:transparent,color:transparent
-    style s4 stroke:transparent,fill:transparent,color:transparent
-    style s3 stroke:transparent,fill:transparent,color:transparent
-    style s2 stroke:transparent,fill:transparent,color:transparent
+graph TD
+    Client["Browser / Client"]
+    subgraph Presentation["Presentation Layer"]
+        Svelte["Svelte Frontend (nginx)"]
+    end
+    subgraph API["API Layer"]
+        Javalin["Javalin App"]
+        subgraph WEB["Web Requests"]
+            AuthCtrl["Auth Controller"]
+            UserCtrl["User Controller"]
+            TmlCtrl["Timeline Controller"]
+        end
+        subgraph SIM["Simulator Requests"]
+            SimCtrl["Simulator Controller"]
+        end
+    end
+    subgraph Business["Business Layer"]
+        AuthService["Auth Service"]
+        UserService["User Service"]
+        MsgService["Message Service"]
+        TmlService["Timeline Service"]
+    end
+    subgraph Data["Data Layer"]
+        FlwRepo["Follower Repository"]
+        UserRepo["User Repository"]
+        MsgRepo["Message Repository"]
+        DB[("PostgreSQL")]
+    end
+    subgraph Monitoring["Monitoring"]
+        NodeExporter["Node Exporter"]
+        Prometheus["Prometheus"]
+        Grafana["Grafana"]
+    end
+    Client --> Svelte
+    Svelte --> Javalin
+    Javalin --> WEB
+    Javalin --> SIM
+    WEB --> Business
+    SIM --> Business
+    Business --> Data
+    NodeExporter --> Prometheus
+    Prometheus --> Grafana
+    Javalin -->|metrics| Prometheus
 ```
+</details>
 
 Incoming traffic hits nginx, which terminates TLS (Let's Encrypt, HTTP/2) and routes requests: `/` to the Svelte static frontend, `/api` and `/web` to the Java backend, and `/grafana/` to the Grafana instance. The Java backend connects to PostgreSQL over JDBC. Prometheus scrapes the Java app's `/metrics` endpoint every 5 seconds and the host via node_exporter. Grafana Alloy tails Docker container logs and ships them to Loki; Grafana queries both Prometheus and Loki for dashboards and log exploration.
 

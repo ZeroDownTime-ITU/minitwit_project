@@ -31,6 +31,9 @@ postgres_data/
 # Temp files
 *.lst
 
+# NPM
+node_modules/
+
 # Vagrant
 .vagrant/
 *.box
@@ -47,3 +50,6 @@ infra/terraform/.terraform/
 infra/terraform/terraform.tfstate
 infra/terraform/terraform.tfstate.backup
 infra/terraform/*.tfvars
+
+# Ansible
+infra/ansible/.vault_pass

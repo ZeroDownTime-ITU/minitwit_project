@@ -1,0 +1,26 @@
+// This is a Jinja2 template (.j2) processed by Ansible.
+// The variable below is replaced with the actual IP of the monitoring droplet.
+
+discovery.docker "containers" {
+  host = "unix:///var/run/docker.sock"
+}
+
+discovery.relabel "containers" {
+  targets = discovery.docker.containers.targets
+  rule {
+    source_labels = ["__meta_docker_container_name"]
+    target_label  = "container"
+  }
+}
+
+loki.source.docker "default" {
+  host       = "unix:///var/run/docker.sock"
+  targets    = discovery.relabel.containers.output
+  forward_to = [loki.write.default.receiver]
+}
+
+loki.write "default" {
+  endpoint {
+    url = "http://{{ hostvars[groups['monitoring'][0]].ansible_host }}:3100/loki/api/v1/push"
+  }
+}

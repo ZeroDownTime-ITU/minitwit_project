@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'minitwit-java'
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+{% for host in groups['swarm'] %}
+          - '{{ hostvars[host].ansible_host }}:7070'
+{% endfor %}
+
+  - job_name: 'node'
+    static_configs:
+      - targets:
+{% for host in groups['swarm'] %}
+          - '{{ hostvars[host].ansible_host }}:9100'
+{% endfor %}

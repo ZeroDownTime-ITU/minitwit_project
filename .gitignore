@@ -46,10 +46,12 @@ vagrant.log
 .DS_Store
 
 # Terraform
-infra/terraform/.terraform/
-infra/terraform/terraform.tfstate
-infra/terraform/terraform.tfstate.backup
-infra/terraform/*.tfvars
+*.tfvars
+.terraform/
+*.tfstate
+*.tfstate.backup
+*.tfstate.lock.info
+.terraform.lock.hcl
 
 # Ansible
 infra/ansible/.vault_pass

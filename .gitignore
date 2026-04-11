@@ -52,6 +52,7 @@ vagrant.log
 *.tfstate.backup
 *.tfstate.lock.info
 .terraform.lock.hcl
+*.tfstate.*.backup
 
 # Ansible
 infra/ansible/.vault_pass

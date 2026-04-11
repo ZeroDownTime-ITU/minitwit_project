@@ -15,6 +15,10 @@
       shell: curl -fsSL https://get.docker.com | sh
       args:
         creates: /usr/bin/docker
+      retries: 3
+      delay: 30
+      register: result
+      until: result.rc == 0
 
     - name: Start and enable Docker
       systemd:
@@ -64,7 +68,7 @@
 
     - name: Copy alloy config
       template:
-        src: template/alloy-config.alloy.j2
+        src: templates/alloy-config.alloy.j2
         dest: /etc/alloy/config.alloy
 
 - name: Setup alloy on non-monitoring nodes

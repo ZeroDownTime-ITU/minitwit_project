@@ -59,38 +59,3 @@ resource "digitalocean_volume_attachment" "monitoring_volume_attachment" {
   droplet_id = digitalocean_droplet.monitoring.id
   volume_id  = data.digitalocean_volume.volume-monitoring.id
 }
-
-# resource "digitalocean_certificate" "minitwit" {
-#   name    = "Minitwit-certificate"
-#   type    = "lets_encrypt"
-#   domains = ["minitwit.app", "www.minitwit.app"]
-# }
-
-resource "digitalocean_loadbalancer" "minitwit" {
-  name   = "minitwit-load-balancer"
-  region = "fra1"
-  enable_backend_keepalive = true
-
-  forwarding_rule {
-    entry_protocol   = "https"
-    entry_port       = 443
-    target_protocol  = "http"
-    target_port      = 80
-    certificate_name = "Minitwit-certificate"
-  }
-
-  forwarding_rule {
-    entry_protocol  = "http"
-    entry_port      = 80
-    target_protocol = "http"
-    target_port     = 80
-  }
-
-  healthcheck {
-    protocol = "http"
-    port     = 80
-    path     = "/"
-  }
-
-  droplet_ids = digitalocean_droplet.swarm_node[*].id
-}

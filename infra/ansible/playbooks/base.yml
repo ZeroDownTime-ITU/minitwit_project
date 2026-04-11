@@ -64,7 +64,7 @@
 
     - name: Copy alloy config
       template:
-        src: ../../../monitoring/alloy-config.alloy.j2
+        src: template/alloy-config.alloy.j2
         dest: /etc/alloy/config.alloy
 
 - name: Setup alloy on non-monitoring nodes

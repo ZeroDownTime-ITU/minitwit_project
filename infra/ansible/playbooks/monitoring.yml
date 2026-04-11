@@ -51,7 +51,7 @@
 
     - name: Generate prometheus config
       template:
-        src: ../../../monitoring/prometheus.yml.j2
+        src: templates/prometheus.yml.j2
         dest: /monitoring/prometheus.yml
 
     - name: Copy docker-compose file

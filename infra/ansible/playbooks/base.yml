@@ -3,13 +3,13 @@
   become: true
 
   tasks:
+    - name: Wait for apt lock to be released
+      shell: while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
+      changed_when: false
+
     - name: Update apt cache
       apt:
         update_cache: yes
-
-    - name: Wait for apt lock to be released
-      shell: while fuser /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
-      changed_when: false
 
     - name: Install Docker
       shell: curl -fsSL https://get.docker.com | sh

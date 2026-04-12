@@ -24,7 +24,7 @@ resource "digitalocean_droplet" "swarm_node" {
 resource "digitalocean_droplet" "db" {
   name     = "minitwit-db"
   image    = "ubuntu-24-04-x64"
-  size     = "s-1vcpu-2gb"
+  size     = "s-1vcpu-1gb"
   region   = "fra1"
   ssh_keys = [var.ssh_key_fingerprint]
   tags   = ["db"]

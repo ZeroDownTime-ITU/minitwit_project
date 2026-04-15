@@ -27,17 +27,3 @@
         --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}
         {{ hostvars[groups['swarm'][0]].ansible_host }}:2377
       ignore_errors: yes
-
-- name: Label swarm nodes
-  hosts: swarm[0]
-  become: true
-
-  tasks:
-    - name: Label node-1 as app node
-      shell: docker node update --label-add type=app swarm-node-1
-
-    - name: Label node-2 as app node
-      shell: docker node update --label-add type=app swarm-node-2
-
-    - name: Label node-3 as edge node
-      shell: docker node update --label-add type=edge swarm-node-3

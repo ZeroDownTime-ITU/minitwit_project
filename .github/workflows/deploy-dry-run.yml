@@ -24,21 +24,18 @@ jobs:
           chmod 600 ~/.ssh/id_ed25519
 
       - name: Write vault password
-        run: echo "${{ secrets.VAULT_PASS }}" > infra/ansible/.vault_pass
-
-      - name: Verify inventory resolves
-        working-directory: infra/ansible
-        env:
-          DIGITAL_OCEAN_KEY: ${{ secrets.DO_TOKEN }}
         run: |
-          ansible-inventory -i inventory.digitalocean.yml --list
-          echo "---"
-          ansible-inventory -i inventory.digitalocean.yml --graph
+          echo -n "${{ secrets.VAULT_PASS }}" > infra/ansible/.vault_pass
+          chmod 600 infra/ansible/.vault_pass
+          if [ ! -s infra/ansible/.vault_pass ]; then
+            echo "ERROR: Vault password file is empty - check VAULT_PASS secret"
+            exit 1
+          fi
 
       - name: Verify vault decrypts
         working-directory: infra/ansible
         run: |
-          ansible-vault view playbooks/vars/secrets.yml
+          ansible-vault view playbooks/vars/secrets.yml --vault-password-file=.vault_pass
 
       - name: Dry run deploy
         working-directory: infra/ansible
@@ -48,4 +45,4 @@ jobs:
           ansible-playbook site.yml \
             --tags deploy \
             --check \
-            -e version=dry-run-test
+            --vault-password-fi

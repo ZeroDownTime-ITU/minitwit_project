@@ -23,7 +23,7 @@
                 goto('/login'); 
             } else {
                 const data = await response.json();
-                error = data.message || "Invalid username or password";
+                error = data.error || "Invalid username or password";
             }
         } catch (e) {
             error = "Could not connect to the server.";

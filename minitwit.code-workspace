@@ -16,12 +16,32 @@
         "port": 5005,
         "projectName": "minitwit-java" 
       },
-     {
+      {
+        "type": "node",
+        "request": "attach",
+        "name": "Docker: Attach to Svelte Server",
+        "port": 9229,
+        "address": "localhost",
+        "localRoot": "${workspaceFolder}/minitwit-svelte",
+        "remoteRoot": "/app",
+        "skipFiles": ["<node_internals>/**"]
+      },
+      {
         "type": "chrome",
         "request": "launch",
         "name": "Svelte: Debug Browser",
         "url": "http://localhost:5173",
-        "webRoot": "${workspaceFolder:minitwit-svelte}"
+        "webRoot": "${workspaceFolder}/minitwit-svelte"
+      }
+    ],
+    "compounds": [
+      {
+        "name": "Debug Full Stack",
+        "configurations": [
+          "Docker: Attach to Minitwit",
+          "Docker: Attach to Svelte Server"
+        ],
+        "stopAll": true
       }
     ]
   }

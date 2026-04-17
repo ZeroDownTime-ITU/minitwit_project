@@ -1,0 +1,52 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    volumes:
+      - /mnt/volume-monitoring/prometheus_data:/prometheus
+      - /monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.retention.time=90d
+    ports:
+      - "9090:9090"
+    networks:
+      - monitoring-network
+
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SERVER_ROOT_URL=https://minitwit.app/grafana/ # don't forget to fill in right domain
+    ports:
+      - "3000:3000"
+    volumes:
+      - /mnt/volume-monitoring/grafana_data:/var/lib/grafana
+      - /monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+      - /monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+    networks:
+      - monitoring-network
+
+  loki:
+    image: grafana/loki:latest
+    restart: unless-stopped
+    ports:
+      - "3100:3100"
+    volumes:
+      - /mnt/volume-monitoring/loki_data:/loki
+    networks:
+      - monitoring-network
+
+  alloy:
+    image: grafana/alloy:latest
+    restart: unless-stopped
+    volumes:
+      - /etc/alloy/config.alloy:/etc/alloy/config.alloy
+      - /var/lib/docker/containers:/var/lib/docker/containers:ro
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      - loki
+    networks:
+      - monitoring-network
+
+networks:
+  monitoring-network:
+    driver: bridge

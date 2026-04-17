@@ -1,0 +1,44 @@
+name: Deploy Test
+
+on:
+  push:
+    branches:
+      - test/**
+  workflow_dispatch:
+
+jobs:
+  check-inventory:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.digitalocean
+
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+      - name: Write vault password
+        run: |
+          echo -n "${{ secrets.VAULT_PASS }}" > infra/ansible/.vault_pass
+          chmod 600 infra/ansible/.vault_pass
+          if [ ! -s infra/ansible/.vault_pass ]; then
+            echo "ERROR: Vault password file is empty - check VAULT_PASS secret"
+            exit 1
+          fi
+
+      - name: Verify vault decrypts
+        working-directory: infra/ansible
+        run: |
+          ansible-vault view playbooks/vars/secrets.yml --vault-password-file=.vault_pass
+
+      - name: test deploy
+        working-directory: infra/ansible
+        env:
+          DIGITAL_OCEAN_KEY: ${{ secrets.DO_TOKEN }}
+        run: ansible-playbook site.yml --tags deploy --check --vault-password-file=.vault_pass -e version=dry-run-test

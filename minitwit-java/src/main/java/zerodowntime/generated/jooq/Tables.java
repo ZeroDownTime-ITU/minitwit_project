@@ -6,6 +6,7 @@ package zerodowntime.generated.jooq;
 
 import zerodowntime.generated.jooq.tables.Follower;
 import zerodowntime.generated.jooq.tables.Message;
+import zerodowntime.generated.jooq.tables.SimulatorState;
 import zerodowntime.generated.jooq.tables.Users;
 
 
@@ -24,6 +25,11 @@ public class Tables {
      * The table <code>public.message</code>.
      */
     public static final Message MESSAGE = Message.MESSAGE;
+
+    /**
+     * The table <code>public.simulator_state</code>.
+     */
+    public static final SimulatorState SIMULATOR_STATE = SimulatorState.SIMULATOR_STATE;
 
     /**
      * The table <code>public.users</code>.

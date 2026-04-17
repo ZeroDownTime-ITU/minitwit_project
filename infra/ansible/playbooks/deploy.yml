@@ -1,0 +1,35 @@
+- name: Deploy app stack
+  hosts: swarm
+  become: true
+  tags: [deploy]
+  tasks:
+    - name: Create nginx config directory
+      file:
+        path: /etc/nginx/conf.d
+        state: directory
+
+    - name: Copy nginx config
+      template:
+        src: templates/nginx.conf.j2
+        dest: /etc/nginx/conf.d/default.conf
+
+- name: Deploy stack
+  hosts: swarm[0] # Swarm distributes across all nodes automatically
+  become: true
+  tags: [deploy]
+  vars_files:
+    - vars/secrets.yml
+
+  tasks:
+    - name: Copy app compose file
+      copy:
+        src: ../../../docker-compose.app.yml
+        dest: /root/docker-compose.app.yml
+
+    - name: Deploy stack
+      shell: docker stack deploy --with-registry-auth -c /root/docker-compose.app.yml minitwit
+      environment:
+        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}:5432/minitwitdb"
+        POSTGRES_USER: "{{ postgres_user }}"
+        POSTGRES_PASSWORD: "{{ postgres_password }}"
+        VERSION: "{{ version | default('latest') }}"

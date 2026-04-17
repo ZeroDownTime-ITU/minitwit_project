@@ -1,0 +1,19 @@
+global:
+  scrape_interval: 15s
+
+scrape_configs:
+  - job_name: 'minitwit-java'
+    scrape_interval: 5s
+    metrics_path: '/metrics'
+    static_configs:
+      - targets:
+{% for host in groups['swarm'] %}
+        - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:7070'
+{% endfor %}
+
+  - job_name: 'node'
+    static_configs:
+      - targets:
+{% for host in groups['swarm'] %}
+        - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:9100'
+{% endfor %}

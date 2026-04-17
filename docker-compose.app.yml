@@ -1,0 +1,37 @@
+services:
+  java-backend:
+    image: despotheanimal/minitwit-java:${VERSION:-latest}
+    environment:
+      - JDBC_URL=${JDBC_URL}
+      - JDBC_USER=${POSTGRES_USER}
+      - JDBC_PASS=${POSTGRES_PASSWORD}
+      - JAVA_TOOL_OPTIONS=-Djdk.tracePinnedThreads=full
+      - TZ=Europe/Copenhagen
+    ports:
+      - "7070:7070"
+    networks:
+      - app-network
+    deploy:
+      replicas: 3
+
+  svelte-frontend:
+    image: despotheanimal/minitwit-svelte:${VERSION:-latest}
+    networks:
+      - app-network
+    deploy:
+      replicas: 3
+
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - /etc/nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks:
+      - app-network
+    deploy:
+      mode: global
+
+networks:
+  app-network:
+    driver: overlay

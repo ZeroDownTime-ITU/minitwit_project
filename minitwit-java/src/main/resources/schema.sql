@@ -20,8 +20,8 @@ CREATE TABLE IF NOT EXISTS message (
 );
 
 CREATE TABLE IF NOT EXISTS simulator_state (
-  state_key   TEXT PRIMARY KEY,
-  state_value INTEGER     NOT NULL DEFAULT 0
+  state_key TEXT PRIMARY KEY,
+  state_value INTEGER NOT NULL DEFAULT 0
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);

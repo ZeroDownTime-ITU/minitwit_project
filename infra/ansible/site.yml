@@ -1,0 +1,5 @@
+- import_playbook: playbooks/base.yml
+- import_playbook: playbooks/swarm.yml
+- import_playbook: playbooks/db.yml
+- import_playbook: playbooks/monitoring.yml
+- import_playbook: playbooks/deploy.yml

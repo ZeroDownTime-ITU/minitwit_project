@@ -1,4 +1,4 @@
-name: Deploy Dry Run
+name: Deploy Test
 
 on:
   push:
@@ -37,7 +37,7 @@ jobs:
         run: |
           ansible-vault view playbooks/vars/secrets.yml --vault-password-file=.vault_pass
 
-      - name: Dry run deploy
+      - name: test deploy
         working-directory: infra/ansible
         env:
           DIGITAL_OCEAN_KEY: ${{ secrets.DO_TOKEN }}

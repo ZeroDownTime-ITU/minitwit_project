@@ -8,8 +8,6 @@ on:
     paths:
       - 'minitwit-java/**'
       - 'minitwit-svelte/**'
-      - 'monitoring/prometheus/**'
-      - 'remote_files/**'
   workflow_dispatch:
 
 permissions:
@@ -52,7 +50,7 @@ jobs:
           git tag $NEW
           git push origin $NEW
           echo "new_tag=$NEW" >> $GITHUB_OUTPUT
-          
+
       - name: Create release
         uses: actions/github-script@v7
         with:
@@ -65,10 +63,8 @@ jobs:
               generate_release_notes: true
             })
 
-  build:
-    needs: tag
+  test:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -77,11 +73,18 @@ jobs:
         uses: actions/setup-java@v4
         with:
           java-version: '21'
-          distribution: 'temurin'
+          distribution: temurin
 
       - name: Run Java tests
-        working-directory: ./minitwit-java
+        working-directory: minitwit-java
         run: mvn test
+
+  build:
+    needs: [tag, test]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
 
       - name: Login to Docker Hub
         uses: docker/login-action@v3
@@ -92,54 +95,82 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push minitwit-java image
+      - name: Build and push minitwit-java
         uses: docker/build-push-action@v6
         with:
-          context: ./minitwit-java
-          file: ./minitwit-java/Dockerfile
+          context: minitwit-java
+          file: minitwit-java/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/minitwit-java:latest
             ${{ secrets.DOCKER_USERNAME }}/minitwit-java:${{ needs.tag.outputs.new_tag }}
+            ${{ secrets.DOCKER_USERNAME }}/minitwit-java:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-java:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-java:webbuildcache,mode=max
 
-      - name: Build and push minitwit-svelte image
+      - name: Build and push minitwit-svelte
         uses: docker/build-push-action@v6
         with:
-          context: ./minitwit-svelte
-          file: ./minitwit-svelte/Dockerfile
+          context: minitwit-svelte
+          file: minitwit-svelte/Dockerfile
           push: true
           platforms: linux/amd64
           tags: |
-            ${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:latest
             ${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:${{ needs.tag.outputs.new_tag }}
+            ${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:latest
           cache-from: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_USERNAME }}/minitwit-svelte:webbuildcache,mode=max
-      
-      - name: Build and push minitwit-prometheus image
-        uses: docker/build-push-action@v6
-        with:
-          context: ./monitoring/prometheus
-          file: ./monitoring/prometheus/Dockerfile
-          push: true
-          platforms: linux/amd64
-          tags: ${{ secrets.DOCKER_USERNAME }}/minitwit-prometheus:latest
+
+  deploy:
+    needs: [tag, build]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Ansible
+        run: |
+          pip install ansible
+          ansible-galaxy collection install community.digitalocean
 
       - name: Configure SSH
         run: |
-          mkdir -p ~/.ssh/
-          echo "$SSH_KEY" > ~/.ssh/do_ssh_key
-          chmod 600 ~/.ssh/do_ssh_key
-        env:
-          SSH_KEY: ${{ secrets.SSH_KEY }}
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
 
-      - name: Deploy to server
-        run: >
-          ssh $SSH_USER@$SSH_HOST
-          -i ~/.ssh/do_ssh_key -o StrictHostKeyChecking=no
-          "VERSION=${{ needs.tag.outputs.new_tag }} /minitwit/deploy.sh"
+      - name: Write vault password
+        run: |
+          echo -n "${{ secrets.VAULT_PASS }}" > infra/ansible/.vault_pass
+          chmod 600 infra/ansible/.vault_pass
+          if [ ! -s infra/ansible/.vault_pass ]; then
+            echo "ERROR: Vault password file is empty - check VAULT_PASS secret"
+            exit 1
+          fi
+
+      - name: Rolling deploy
+        working-directory: infra/ansible
         env:
-          SSH_USER: ${{ secrets.SSH_USER }}
-          SSH_HOST: ${{ secrets.SSH_HOST }}
+          DIGITAL_OCEAN_KEY: ${{ secrets.DO_TOKEN }}
+        run: ansible-playbook site.yml --tags deploy --vault-password-file=.vault_pass -e version=${{ needs.tag.outputs.new_tag }}
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for rolling update
+        run: sleep 30
+
+      - name: Verify deployment
+        run: |
+          for i in $(seq 1 10); do
+            STATUS=$(curl -s -o /dev/null -w "%{http_code}" https://zerodt.live/api/latest)
+            if [ "$STATUS" = "200" ]; then
+              echo "Deployment verified: HTTP $STATUS"
+              exit 0
+            fi
+            echo "Attempt $i/10: HTTP $STATUS, retrying in 15s..."
+            sleep 15
+          done
+          echo "Verification failed after 10 attempts"
+          exit 1

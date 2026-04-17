@@ -49,6 +49,14 @@
       <version>42.7.2</version>
     </dependency>
 
+    <!-- Java JWT -->
+    <dependency>
+        <groupId>com.auth0</groupId>
+        <artifactId>java-jwt</artifactId>
+        <version>4.5.1</version>
+        <scope>compile</scope>
+    </dependency>
+
     <!-- Database dependencies -->
     <dependency>
       <groupId>com.zaxxer</groupId>

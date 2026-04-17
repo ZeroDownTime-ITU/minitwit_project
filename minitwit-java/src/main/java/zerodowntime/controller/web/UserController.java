@@ -33,7 +33,7 @@ public class UserController extends BaseController {
             return;
         }
 
-        Integer currentUserId = ctx.sessionAttribute("user_id");
+        Integer currentUserId = ctx.attribute("userId");
         Integer profileUserId = profileUser.getUserId();
 
         List<MessageView> profileMessages = timelineService.getProfileMessages(profileUserId, pageOffset);

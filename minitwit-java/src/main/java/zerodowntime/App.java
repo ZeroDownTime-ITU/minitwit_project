@@ -1,13 +1,19 @@
 package zerodowntime;
 
 import io.javalin.Javalin;
+import io.javalin.http.UnauthorizedResponse;
+
 import static io.javalin.apibuilder.ApiBuilder.*;
 import org.jooq.DSLContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.auth0.jwt.exceptions.JWTVerificationException;
+import com.auth0.jwt.interfaces.DecodedJWT;
+
 import io.javalin.openapi.plugin.OpenApiPlugin;
 import io.javalin.openapi.plugin.swagger.SwaggerPlugin;
+import zerodowntime.constants.AppConstants;
 import zerodowntime.constants.AppConstants.PublicApi;
 import zerodowntime.constants.AppConstants.SimulatorApi;
 import zerodowntime.controller.simulator.SimulatorController;
@@ -22,12 +28,14 @@ import zerodowntime.service.AuthService;
 import zerodowntime.service.MessageService;
 import zerodowntime.service.TimelineService;
 import zerodowntime.service.UserService;
+import zerodowntime.util.JwtUtils;
 import io.prometheus.client.Counter;
 import io.prometheus.client.Histogram;
 import io.prometheus.client.CollectorRegistry;
 import io.prometheus.client.exporter.common.TextFormat;
 import io.prometheus.client.hotspot.DefaultExports;
 import java.io.StringWriter;
+import java.util.Set;
 
 public class App {
     private static final Logger log = LoggerFactory.getLogger(App.class);
@@ -42,6 +50,14 @@ public class App {
             .help("HTTP request duration")
             .labelNames("method", "path", "status")
             .register();
+
+    private static final Set<String> PUBLIC_ROUTES = Set.of(
+            AppConstants.PublicApi.LOGIN,
+            AppConstants.PublicApi.LOGOUT,
+            AppConstants.PublicApi.REGISTER,
+            AppConstants.PublicApi.PUBLIC_TIMELINE,
+            "/web/user/" // prefix for parameterized route
+    );
 
     public static void main(String[] args) {
         DefaultExports.initialize();
@@ -88,9 +104,19 @@ public class App {
             });
 
             config.routes.before("/web/*", ctx -> {
-                Integer userId = ctx.sessionAttribute("user_id");
-                if (userId != null) {
-                    userRepo.findById(userId).ifPresent(user -> ctx.attribute("user", user));
+                if (PUBLIC_ROUTES.stream().anyMatch(ctx.path()::startsWith))
+                    return;
+
+                String token = ctx.cookie("token");
+                if (token == null) {
+                    throw new UnauthorizedResponse("Missing token");
+                }
+                try {
+                    DecodedJWT jwt = JwtUtils.verifyToken(token);
+                    ctx.attribute("userId", jwt.getClaim("userId").asInt());
+                    ctx.attribute("username", jwt.getClaim("username").asString());
+                } catch (JWTVerificationException e) {
+                    throw new UnauthorizedResponse("Invalid token");
                 }
             });
 

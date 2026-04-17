@@ -9,13 +9,15 @@ import com.auth0.jwt.interfaces.DecodedJWT;
 import io.javalin.http.Context;
 
 public class JwtUtils {
+    private JwtUtils() {}
+
     private static final Algorithm ALGORITHM = Algorithm.HMAC256(System.getenv("JWT_SECRET"));
 
     public static String createToken(int userId, String username) {
         return JWT.create()
                 .withClaim("userId", userId)
                 .withClaim("username", username)
-                .withExpiresAt(Instant.now().plusSeconds(60 * 60 * 24)) // 24h
+                .withExpiresAt(Instant.now().plusSeconds(60L * 60 * 24)) // 24h
                 .sign(ALGORITHM);
     }
 

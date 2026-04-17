@@ -8,7 +8,7 @@ services:
       - --config.file=/etc/prometheus/prometheus.yml
       - --storage.tsdb.retention.time=90d
     ports:
-      - "9090:9090"
+      - "9090:9090" # TODO can potentially be removed
     networks:
       - monitoring-network
 
@@ -29,7 +29,7 @@ services:
     image: grafana/loki:latest
     restart: unless-stopped
     ports:
-      - "3100:3100"
+      - "3100:3100" # TODO can potentially be removed
     volumes:
       - /mnt/volume-monitoring/loki_data:/loki
     networks:

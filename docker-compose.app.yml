@@ -9,7 +9,7 @@ services:
       - JAVA_TOOL_OPTIONS=-Djdk.tracePinnedThreads=full
       - TZ=Europe/Copenhagen
     ports:
-      - "7070:7070"
+      - "7070:7070" # TODO can potentially be removed
     networks:
       - app-network
     deploy:

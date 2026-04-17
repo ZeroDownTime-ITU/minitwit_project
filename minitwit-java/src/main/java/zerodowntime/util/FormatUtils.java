@@ -4,14 +4,14 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 
 public class FormatUtils {
 
     public static String formatDatetime(long timestamp) {
         return Instant.ofEpochSecond(timestamp)
-                .atZone(ZoneOffset.UTC)
+                .atZone(ZoneId.of("Europe/Copenhagen"))
                 .format(DateTimeFormatter.ofPattern("yyyy-MM-dd @ HH:mm"));
     }
 

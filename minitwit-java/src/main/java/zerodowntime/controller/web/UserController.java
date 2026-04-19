@@ -57,6 +57,11 @@ public class UserController extends BaseController {
             return;
         }
 
+        if (userIdToFollow.equals(userId)) {
+            ctx.status(400);
+            return;
+        }
+
         boolean followed = userService.followUser(userId, userIdToFollow);
 
         ctx.status(followed ? 204 : 200);

@@ -28,3 +28,4 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_users_username ON users (username);
 CREATE INDEX IF NOT EXISTS idx_message_flagged_pubdate ON message (flagged, pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_message_author_pubdate ON message (author_id, pub_date DESC);
 CREATE INDEX IF NOT EXISTS idx_follower_who_id ON follower(who_id); 
+CREATE INDEX IF NOT EXISTS idx_follower_whom_id ON follower(whom_id);

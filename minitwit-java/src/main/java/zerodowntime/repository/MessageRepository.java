@@ -1,6 +1,8 @@
 package zerodowntime.repository;
 
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
+
 import zerodowntime.dto.web.MessageDto;
 import static zerodowntime.generated.jooq.Tables.*;
 
@@ -26,35 +28,48 @@ public class MessageRepository extends BaseRepository {
     }
 
     public List<MessageDto> getUserTimelineMessages(int userId, int limit, int offset) {
-        return db.select(MESSAGE.fields())
+        var ownMessages = db.select(MESSAGE.fields())
                 .select(USERS.USERNAME, USERS.EMAIL)
                 .from(MESSAGE)
                 .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
-                .where(MESSAGE.FLAGGED.eq(0))
-                .and(
-                        USERS.USER_ID.eq(userId)
-                                .or(USERS.USER_ID.in(
-                                        db.select(FOLLOWER.WHOM_ID)
-                                                .from(FOLLOWER)
-                                                .where(FOLLOWER.WHO_ID
-                                                        .eq(userId)))))
-                .orderBy(MESSAGE.PUB_DATE.desc())
+                .where(MESSAGE.AUTHOR_ID.eq(userId))
+                .and(MESSAGE.FLAGGED.eq(0));
+
+        var followedMessages = db.select(MESSAGE.fields())
+                .select(USERS.USERNAME, USERS.EMAIL)
+                .from(MESSAGE)
+                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
+                .where(MESSAGE.AUTHOR_ID.in(
+                        db.select(FOLLOWER.WHOM_ID)
+                                .from(FOLLOWER)
+                                .where(FOLLOWER.WHO_ID.eq(userId))))
+                .and(MESSAGE.FLAGGED.eq(0));
+
+        return db.select()
+                .from(ownMessages.unionAll(followedMessages))
+                .orderBy(DSL.field("pub_date").desc())
                 .limit(limit)
                 .offset(offset)
                 .fetchInto(MessageDto.class);
     }
 
     public int getUserTimelineCount(int userId) {
-        return db.selectCount()
+        int own = db.selectCount()
                 .from(MESSAGE)
-                .join(USERS).on(MESSAGE.AUTHOR_ID.eq(USERS.USER_ID))
-                .where(MESSAGE.FLAGGED.eq(0))
-                .and(USERS.USER_ID.eq(userId)
-                        .or(USERS.USER_ID.in(
-                                db.select(FOLLOWER.WHOM_ID)
-                                        .from(FOLLOWER)
-                                        .where(FOLLOWER.WHO_ID.eq(userId)))))
+                .where(MESSAGE.AUTHOR_ID.eq(userId))
+                .and(MESSAGE.FLAGGED.eq(0))
                 .fetchOne(0, int.class);
+
+        int followed = db.selectCount()
+                .from(MESSAGE)
+                .where(MESSAGE.AUTHOR_ID.in(
+                        db.select(FOLLOWER.WHOM_ID)
+                                .from(FOLLOWER)
+                                .where(FOLLOWER.WHO_ID.eq(userId))))
+                .and(MESSAGE.FLAGGED.eq(0))
+                .fetchOne(0, int.class);
+
+        return own + followed;
     }
 
     public List<MessageDto> getPublicTimelineMessages(int limit, int offset) {
@@ -70,10 +85,9 @@ public class MessageRepository extends BaseRepository {
     }
 
     public int getPublicTimelineCount() {
-        return db.selectCount()
-                .from(MESSAGE)
-                .where(MESSAGE.FLAGGED.eq(0))
-                .fetchOne(0, int.class);
+        return db.resultQuery("SELECT reltuples::bigint FROM pg_class WHERE relname = 'message'")
+                .fetchOne()
+                .get(0, Integer.class);
     }
 
     public List<MessageDto> getMessagesByUserId(int userId, int limit, int offset) {

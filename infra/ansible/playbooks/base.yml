@@ -77,11 +77,12 @@
         src: templates/alloy-config.alloy.j2
         dest: /etc/alloy/config.alloy
 
-    - name: Run alloy container
+    - name: Restart alloy container
       docker_container:
         name: alloy
         image: grafana/alloy:latest
         state: started
+        restart: yes
         restart_policy: always
         volumes:
           - /etc/alloy/config.alloy:/etc/alloy/config.alloy

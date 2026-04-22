@@ -1,0 +1,1 @@
+monitoring_private_ip: "{{ hostvars[groups['monitoring'][0]].do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}"

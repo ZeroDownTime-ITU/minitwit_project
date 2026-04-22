@@ -6,7 +6,7 @@
     - name: Init Docker Swarm
       shell: docker swarm init --advertise-addr {{ ansible_host }}
       register: swarm_init
-      ignore_errors: yes
+      ignore_errors: true
 
     - name: Get worker join token
       shell: docker swarm join-token worker -q
@@ -26,4 +26,4 @@
         docker swarm join
         --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}
         {{ hostvars[groups['swarm'][0]].ansible_host }}:2377
-      ignore_errors: yes
+      ignore_errors: true

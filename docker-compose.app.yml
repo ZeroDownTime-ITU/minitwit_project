@@ -1,6 +1,8 @@
 services:
   java-backend:
     image: despotheanimal/minitwit-java:${VERSION:-latest}
+    ports:
+    - "7070:7070"
     environment:
       - JDBC_URL=${JDBC_URL}
       - JDBC_USER=${POSTGRES_USER}

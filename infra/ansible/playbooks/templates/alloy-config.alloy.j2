@@ -8,7 +8,12 @@ discovery.docker "containers" {
 discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
   rule {
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
+    target_label  = "service"
+  }
+  rule {
     source_labels = ["__meta_docker_container_name"]
+    regex         = "/?([^.]+\\.[0-9]+).*"
     target_label  = "container"
   }
 }
@@ -21,5 +26,6 @@ loki.source.docker "default" {
 
 loki.write "default" {
   endpoint {
-    url = "http://{{ monitoring_private_ip }}:3100/loki/api/v1/push"  }
+    url = "http://{{ monitoring_private_ip }}:3100/loki/api/v1/push"
+  }
 }

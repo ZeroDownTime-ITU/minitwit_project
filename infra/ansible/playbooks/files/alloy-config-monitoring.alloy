@@ -10,8 +10,12 @@ discovery.relabel "containers" {
   }
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex         = "/?([^.]+\\.[0-9]+).*"
+    regex         = "/?([^.]+).*"
     target_label  = "container"
+  }
+  rule {
+    replacement  = "minitwit-monitoring"
+    target_label = "node"
   }
 }
 

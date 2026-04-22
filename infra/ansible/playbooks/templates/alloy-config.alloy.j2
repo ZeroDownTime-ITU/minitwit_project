@@ -13,8 +13,12 @@ discovery.relabel "containers" {
   }
   rule {
     source_labels = ["__meta_docker_container_name"]
-    regex         = "/?([^.]+\\.[0-9]+).*"
+    regex         = "/?([^.]+).*"
     target_label  = "container"
+  }
+  rule {
+    replacement  = "{{ ansible_hostname }}"
+    target_label = "node"
   }
 }
 

@@ -26,6 +26,8 @@ services:
   loki:
     image: grafana/loki:latest
     restart: unless-stopped
+    ports:
+      - "3100:3100"
     volumes:
       - /mnt/volume-monitoring/loki_data:/loki
     networks:

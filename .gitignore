@@ -56,3 +56,22 @@ vagrant.log
 
 # Ansible
 infra/ansible/.vault_pass
+
+# Report build artifacts
+report/report.pdf
+report/*.aux
+report/*.log
+report/*.out
+report/*.toc
+report/*.lof
+report/*.lot
+report/*.fls
+report/*.fdb_latexmk
+report/*.synctex.gz
+report/*.bbl
+report/*.blg
+report/*.run.xml
+
+# VS Code LaTeX Workshop
+report/*.synctex(busy)
+report/.texpadtmp/

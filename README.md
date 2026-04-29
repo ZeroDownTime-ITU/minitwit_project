@@ -12,7 +12,7 @@
 
 ## Overview
 
-MiniTwit is a microblogging application built and operated as part of the MSc DevOps course at IT University of Copenhagen. It runs live at [zerodt.live](https://zerodt.live) under continuous load from a course-operated simulator that registers users, posts messages, and queries the API around the clock. The project covers the full DevOps lifecycle: automated CI/CD, containerised deployment, infrastructure-as-code, and production observability.
+MiniTwit is a microblogging application refactored and operated as part of the MSc DevOps course at IT University of Copenhagen. It available at [zerodt.live](https://zerodt.live) under continuous load from a course-operated simulator that registers users, posts messages, and queries the API around the clock. The project covers the full DevOps lifecycle: automated CI/CD, containerised deployment, infrastructure-as-code, and production observability.
 
 ---
 
@@ -79,13 +79,13 @@ Incoming traffic hits the DigitalOcean Load Balancer (168.144.4.198), which term
 | Backend | Java 21, Javalin 7, jOOQ, HikariCP |
 | Frontend | SvelteKit 2, Svelte 5, TypeScript, TailwindCSS 4 |
 | Database | PostgreSQL 15 |
-| Reverse Proxy | nginx (Alpine) — serving static frontend and proxying API |
-| TLS | DO Load Balancer (168.144.4.198) — Let's Encrypt cert for zerodt.live |
+| Reverse Proxy | nginx (Alpine) |
+| TLS | DO Load Balancer (168.144.4.198) |
 | Containerisation | Docker Swarm (production, 3-manager cluster), Docker Compose (local dev) |
-| CI/CD | GitHub Actions — tag, test, build, deploy (Ansible), verify |
+| CI/CD | GitHub Actions |
 | Observability | Prometheus, Grafana, Loki, Grafana Alloy |
 | Code Quality | SonarCloud, Codacy |
-| Infrastructure | OpenTofu, Ansible, DigitalOcean (5 Droplets + Block Storage) |
+| Infrastructure | OpenTofu, Ansible, DigitalOcean Droplets, DigitalOcean Volumes |
 
 ---
 

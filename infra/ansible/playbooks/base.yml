@@ -11,6 +11,45 @@
       apt:
         update_cache: yes
 
+    # Adding firewall. 
+    - name: Install UFW
+      apt:
+        name: ufw
+        state: present
+
+    - name: Set default deny incoming
+      community.general.ufw:
+        direction: incoming
+        policy: deny
+
+    - name: Set default allow outgoing
+      community.general.ufw:
+        direction: outgoing
+        policy: allow
+
+    - name: Allow SSH
+      community.general.ufw:
+        rule: allow
+        port: 22
+        proto: tcp
+
+    - name: Allow HTTP
+      community.general.ufw:
+        rule: allow
+        port: 80
+        proto: tcp
+
+    - name: Allow HTTPS
+      community.general.ufw:
+        rule: allow
+        port: 443
+        proto: tcp
+
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+    # Firewall end. 
+
     - name: Install Docker
       shell: curl -fsSL https://get.docker.com | sh
       args:

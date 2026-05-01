@@ -2,7 +2,14 @@
  
 This folder contains the project report for the DevOps, Software Evolution
 and Software Maintenance course (KSDSESM1KU).
- 
+
+## Formal Requirements for the report
+Your final report should be maximum 2500 words long, approx 9-10 pages. So, try to be brief and concise, but be sure to include all necessary information listed below. Note, images do not count as words.
+
+Make sure that you link all artifacts that you consider constitutional to your projects together with short descriptions of the linked artifacts from your reports, i.e., link all necessary repositories, issue trackers, monitoring/logging systems, etc.
+
+Since this is a group project and the report is written by a group make sure to indicate for each section the respective author(s).
+
 ## Structure
  
 ```

@@ -5,7 +5,6 @@
 [![Live](https://img.shields.io/website?url=https%3A%2F%2Fzerodt.live&label=live&style=flat-square)](https://zerodt.live)
 [![Release](https://img.shields.io/github/v/release/ZeroDownTime-ITU/minitwit_project?style=flat-square)](https://github.com/ZeroDownTime-ITU/minitwit_project/releases/latest)
 [![CI](https://github.com/ZeroDownTime-ITU/minitwit_project/actions/workflows/continuous-deployment.yml/badge.svg)](https://github.com/ZeroDownTime-ITU/minitwit_project/actions/workflows/continuous-deployment.yml)
-
 [![Codacy Badge](https://app.codacy.com/project/badge/Grade/08a89c1b91024097882dca6e9351f7a9)](https://app.codacy.com/gh/ZeroDownTime-ITU/minitwit_project/dashboard?utm_source=gh&utm_medium=referral&utm_content=&utm_campaign=Badge_grade)
 
 ---

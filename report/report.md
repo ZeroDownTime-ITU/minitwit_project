@@ -114,6 +114,8 @@ In particular, the following descriptions should be included:
 
 ![Caption text](diagrams/CICD_Pipeline.png)
 
+![alt text](diagrams/CICD_Pipeline_StateVersion.png)
+
 ## Monitoring Architecture and Data Flow
 Our monitoring setup consists of three components:
 Application - Javalin app - produces metrics

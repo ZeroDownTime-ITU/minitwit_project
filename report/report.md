@@ -96,24 +96,13 @@ By using OpenTofu in conjunction with Ansible, we have been able to more easily 
 
 ### Github Workflows | CI/CD as code
 
+GitHub Actions was chosen for its native integration with our existing GitHub repository, eliminating the need for a separate CI/CD service. While alternatives such as Jenkins or Forgejo offer self-hosted execution and faster feedback loops, the operational overhead of maintaining additional infrastructure outweighed the benefits at our scale. The pipeline implements continuous deployment: every push to main that touches application code is automatically tagged, tested, built, and deployed to production without manual intervention, as illustrated in the activity and sequence diagrams. Tests act as the deployment gate, meaning a failing test job would block the build and deploy stages from running. A dry-run workflow on test/** branches allowed us to validate infrastructure changes safely before merging.
+
+![alt text](diagrams/CICD_Pipeline_StateVersion.png)
+
 ## Monitoring Architecture and Data Flow
 
 ### Dashboard Structure Basic Model
-
-Building these dashboards has been critical for understanding how metrics are collected, stored, and interpreted in Grafana. Debugging incorrect metrics, understanding why counters reset (application restarts) and understanding how rate-based queries work.
-
-Grafana is deployed on a separate droplet. This ensures that monitoring remains available even if the application becomes unresponsive, allowing us to detect both errors and silence in the system. We divide our dashboards into two categories.
-
-**Business dashboards**
-
-Focus on how the platform is being used, identify trends in user activity and usage patterns, answering questions such as how endpoints are used, where users interact most, and where issues such as errors or timeouts occur.
-**(Insert screen shot)**
-
-**Operational dashboards**
-Monitors system-level metrics such as CPU usage, memory usage, disk usage, and disk I/O.
-
-From an operational perspective, both errors and absence of data are important signals. An error code indicates failure, but a complete lack of incoming data can also indicate that the system is down.
-**(Insert screen shot)**
 
 Our monitoring setup consists of three components:
 

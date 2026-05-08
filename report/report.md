@@ -51,7 +51,7 @@ In particular, the following descriptions should be included:
 ## CI/CD Pipline 
 ### Github Workflows | CI/CD as code
 
-![Caption text](report/diagrams/CICD_Pipeline.png)
+![Caption text](diagrams/CICD_Pipeline.png)
 
 ## Monitoring Architecture and Data Flow
 Our monitoring setup consists of three components:

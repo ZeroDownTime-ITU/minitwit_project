@@ -48,7 +48,10 @@ In particular, the following descriptions should be included:
 - A complete description and illustration of stages and tools included in the CI/CD pipelines, including deployment and release of your systems.
 - What do you log in your systems and how do you aggregate logs?
 - How do you handle availability and scaling in your systems?
+## CI/CD Pipline 
+### Github Workflows | CI/CD as code
 
+![Caption text](report/diagrams/CICD_Pipeline.png)
 
 ## Monitoring Architecture and Data Flow
 Our monitoring setup consists of three components:

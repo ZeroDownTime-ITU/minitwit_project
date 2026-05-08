@@ -35,13 +35,14 @@ Minitwit is a Twitter clone built with a Svelte frontend, a Java (Javalin) REST 
 
 ### Infrastructure Architecture
 
-![alt text](diagrams/Minitwit%20-%20Request%20flow.png)
+![Request flow](diagrams/Minitwit%20-%20Request%20flow.png)
 
-The production system runs across five DigitalOcean droplets as illustrated in the above figure. Three manager-worker swarm nodes form the application cluster, one dedicated droplet hosts the PostgreSQL database, and one dedicated droplet hosts the monitoring stack. Both the database and monitoring droplets have a DigitalOcean block storage volume attached, ensuring data persists across droplet recreations.
+Our system runs across five DigitalOcean droplets as illustrated in the above figure. Three manager-worker swarm nodes form the application cluster, one dedicated droplet hosts the PostgreSQL database, and one dedicated droplet hosts the monitoring stack. 
 
-A DigitalOcean load balancer sits in front of the three swarm nodes, handling SSL termination via a Let's Encrypt certificate and distributing incoming traffic across the swarm. Each swarm node runs nginx as a reverse proxy, routing requests to the appropriate container based on the URL path — /api, /web, /swagger and /openapi route to the Java backend on port 7070, all other traffic goes to the Svelte frontend on port 80, and /grafana proxies across the private network to Grafana on the monitoring droplet. All cross-droplet communication outside the Swarm overlay network uses DigitalOcean's private network, such as connections from the swarm nodes to the database and monitoring droplets.
+Docker Swarm manages container orchestration across the three nodes, running three replicas each of nginx, the Java backend and the Svelte frontend. The routing mesh ensures any node can handle any request regardless of which node the container is actually running on. In order to keep eyes on these droplets, monitoring was deployed. 
 
-Docker Swarm manages container orchestration across the three nodes, running three replicas each of nginx, the Java backend and the Svelte frontend. The routing mesh ensures any node can handle any request regardless of which node the container is actually running on.
+A DigitalOcean load balancer sits in front of the three swarm nodes, handling SSL termination via a Let's Encrypt certificate and distributing incoming traffic across the swarm. Each swarm node runs nginx as a reverse proxy, routing requests to the appropriate container based on the URL path — /api, /web, /swagger and /openapi route to the Java backend on port 7070, all other traffic goes to the Svelte frontend on port 80, and /grafana proxies across the private network to Grafana on the monitoring droplet. All cross-droplet communication outside the Swarm overlay network uses DigitalOcean's private network, such as connections from the swarm nodes to the database and monitoring droplets. Both the database and monitoring droplets have a DigitalOcean block storage volume attached, ensuring data persists across droplet recreations.
+
 
 ### Monitoring Architecture
 
@@ -51,7 +52,7 @@ Grafana Alloy runs on all the droplets, collecting logs of all the containers on
 
 ### Application Architecture
 
-![alt text](diagrams/Minitwit%20-%20Component%20diagram.png)
+![Components](diagrams/Minitwit%20-%20Component%20diagram.png)
 
 The backend follows a three-layer architecture as illustrated in the above diagram. The API layer is split into two distinct entry points:
 
@@ -68,30 +69,19 @@ The separation also made the code more maintainable. Migrating to an ORM was str
 
 The entire infrastructure is provisioned through code. OpenTofu provisions the DigitalOcean droplets and volumes, while Ansible handles the configuration of the VMs created by OpenTofu. Ansible executes five playbooks in sequence: base setup, Swarm initialization, database configuration, monitoring setup and application deployment. A single provision.sh script runs the full provisioning sequence from scratch. Both tools are designed to be idempotent, meaning the scripts can safely be rerun if anything fails during the process.
 
------------
-
-- All dependencies of your ITU-MiniTwit systems on all levels of abstraction and development stages. That is, list and briefly describe all technologies and tools you applied and depend on.
-- Describe the current state of your systems, for example using results of static analysis and quality assessments.
-
 ## Technology & System choice (Magnus tries to write something that may or may not make sense)
-
-Our system runs across five servers:
-
-- 3 **Swarm nodes** - Two of these runs both backend, frontend and nginx while one node only has nginx on it. This was done as an extra load balancer within the swarm itself making it the entry point for all trafic entering a node
-- 1 **Database server** - Runs PostgreSQL with a dedicated volume from DigitalOcean
-- 1 **Monitoring server** - Collects each of the docker containers' logs, as well as metrics via prometheus and  which then is viewable at the Grafana dashboard.
 
 Java was chosen as the backend language due to the team's prior familiarity with it. For the web framework we chose Javalin, a lightweight alternative to larger frameworks like Spring Boot (this was a consideration in terms of the scope of the project in general **THOUGHTS AROUND THIS?**) — it requires far less configuration and setup, which suited the scope of having 5 nodes in total. **(feel free to change this if there are any one who disagrees)**
 
 For container orchestration we used Docker Swarm rather than Kubernetes. Swarm is simpler to operate and sufficient for the scale of this project. The group did also consider Kubernetes but this was scraped due to complexity **(OR WHAT WOULD BE SMART TO WRITE?)**. For cloud hosting we chose DigitalOcean, as the team had access to credits through GitHub Education.
 
-In the early stages of the course, virtual machines were provisioned using Vagrant with a DigitalOcean provider and configured via a provision.sh script. In the latter half of the course, the group migrated over to OpenTofu (*an open-source version of Terraform*) and Ansible for configuration management due to Ansible's promise of idempotency (meaning applying the same operation several times does not affect the system) ( <-- **Arrrgh! I want a better sentence or something!**). The reason for this change to Ansible was that we were able to use Ansible's Vault for storing environment variable instead of having a `.env` file which had to manually edited on each computer as to not accidentally publish keys or other confidential information.
+In the early stages of the course, virtual machines were provisioned using Vagrant with a DigitalOcean provider and configured via a `provision.sh` script. In the latter half of the course, the group migrated over to OpenTofu and Ansible for configuration management due to Ansible's promise of idempotency. The reason for this change to Ansible was that we were able to use Ansible's Vault for storing environment variable instead of having a `.env` file which had to manually edited on each computer as to not accidentally publish keys or other confidential information.
 
 ### Dependencies
 
 The diagram below shows the dependencies across the project such as build tools, libraries and images for docker containers.
 
-![Dependency diagram](images/dependency-diagram.svg)
+![Dependency](images/dependency-diagram.svg)
 
 `Minitwit-java` uses the `pom.xml` file for managing its dependencies whereas the Svelte frontend uses npm (node package manager) to manage its dependencies. The infrastructure of the VMs is being handled by Terraform which creates the necessary droplets and volumes (for data storage) through the `main.tf` script - Ansible is then provisioning each machine with `base.yml` - installing all the shared dependencies across nodes - and then, depending on the VM, provisions the VM with either `swarm.yml`, `db.yml`, `monitoring.yml`. Then the final *playbook* `deploy.yml` deploys the docker swarm/stack.
 
@@ -102,26 +92,33 @@ By using OpenTofu in conjunction with Ansible, we have been able to more easily 
 
 # Process Perspective
 
-This perspective should clarify how code or other artifacts come from idea into the running system and everything that happens on the way.
-
-In particular, the following descriptions should be included:
-
-- A complete description and illustration of stages and tools included in the CI/CD pipelines, including deployment and release of your systems.
-- What do you log in your systems and how do you aggregate logs?
-- How do you handle availability and scaling in your systems?
-
 ## CI/CD Pipline
 
 ### Github Workflows | CI/CD as code
 
-![Caption text](diagrams/CICD_Pipeline.png)
-
 ## Monitoring Architecture and Data Flow
+
+### Dashboard Structure Basic Model
+
+Building these dashboards has been critical for understanding how metrics are collected, stored, and interpreted in Grafana. Debugging incorrect metrics, understanding why counters reset (application restarts) and understanding how rate-based queries work.
+
+Grafana is deployed on a separate droplet. This ensures that monitoring remains available even if the application becomes unresponsive, allowing us to detect both errors and silence in the system. We divide our dashboards into two categories.
+
+**Business dashboards**
+
+Focus on how the platform is being used, identify trends in user activity and usage patterns, answering questions such as how endpoints are used, where users interact most, and where issues such as errors or timeouts occur.
+**(Insert screen shot)**
+
+**Operational dashboards**
+Monitors system-level metrics such as CPU usage, memory usage, disk usage, and disk I/O.
+
+From an operational perspective, both errors and absence of data are important signals. An error code indicates failure, but a complete lack of incoming data can also indicate that the system is down.
+**(Insert screen shot)**
 
 Our monitoring setup consists of three components:
 
 - Application - Javalin app - produces metrics
-- Prometheus -collects and stores metrics over time
+- Prometheus - collects and stores metrics over time
 - Grafana - visualizes metrics
 
 ### How metrics are stored (labels + time)
@@ -129,7 +126,7 @@ Our monitoring setup consists of three components:
 Each metric is not just one value.
 It is split into multiple counters based on labels, and each of those is tracked over time.
 
-#### Labels (different counters)
+### Labels (different counters)
 
 When we define:
 
@@ -161,7 +158,7 @@ Each of these is its own counter. Prometheus calls /metrics repeatedly every 15 
 
 For every label combination, Prometheus stores a timeline of values. Many counters (labels). Each with its own history - hence each unique set of labels creates its own time series that Prometheus tracks over time.
 
-#### How Queries Work
+### How Queries Work
 
 Prometheus stores all collected snapshots as a time series `[100, 120, 150, ...]`
 Historical data is created by Prometheus repeatedly sampling the application.
@@ -173,7 +170,7 @@ This allows Prometheus to compute:
 - trends over time
 - error rates etc
 
-#### Role of Grafana
+### Role of Grafana
 
 Grafana does not store or compute metrics it queries Prometheus then visualizes the returned time series data. The system works because of the following separation:
 
@@ -183,31 +180,9 @@ Grafana does not store or compute metrics it queries Prometheus then visualizes 
 Without Prometheus, there is no history
 Without history, there are no rates or trends
 
-### Dashboard Structure Basic Model
-
-Building these dashboards has been critical for understanding how metrics are collected, stored, and interpreted in Grafana. Debugging incorrect metrics, understanding why counters reset (application restarts) and understanding how rate-based queries work.
-
-Grafana is deployed on a separate droplet. This ensures that monitoring remains available even if the application becomes unresponsive, allowing us to detect both errors and silence in the system. We divide our dashboards into two categories.
-
-#### Business dashboards
-
-focus on how the platform is being used, identify trends in user activity and usage patterns, answering questions such as how endpoints are used, where users interact most, and where issues such as errors or timeouts occur.
-
-#### Operational dashboards
-
-monitors system-level metrics such as CPU usage, memory usage, disk usage, and disk I/O.
-
-From an operational perspective, both errors and absence of data are important signals. An error code indicates failure, but a complete lack of incoming data can also indicate that the system is down.
-
 ### Logging Architecture and Data Flow
 
-Our logging setup consists of three components:
-
-- Application - Javalin app - produces logs
-- Loki - collects and stores logs over time
-- Grafana - visualizes logs
-
-#### How logs are stored
+**How logs are stored**
 
 Logs are not numeric values like metrics but textual events describing what happens in the system. Each log entry represents a specific event such as an error, request, or system message.
 The application produces logs using a logger, for example:
@@ -228,8 +203,7 @@ User Y followed user Z
 Each of these is an individual log entry.
 Loki collects these logs and stores them over time, similar to how Prometheus stores metrics, but without aggregating them into numeric values.
 
-#### How logs are queried
-
+**How logs are queried**
 Logs are stored as a timeline of events rather than a sequence of numbers.
 Instead of computing rates or averages, logs are queried to:
 
@@ -237,23 +211,12 @@ Instead of computing rates or averages, logs are queried to:
 - trace errors
 - understand what happened at a given point in time
 
-#### Loki's Role of Grafana
-
+**Loki's Role of Grafana**
 Grafana queries Loki and visualizes logs in a searchable format.
 The system works because of the following separation:
 
 - Application - produces log messages
 - Loki - builds history by storing logs over time
-
-Without Loki, there is no log history
-Without log history, debugging and tracing issues becomes significantly harder
-
-#### Basic Model summary
-
-- Application = produces events (log messages)
-- Loki = stores events over time
-- Grafana = visualization and search
-
 
 ## Security
 

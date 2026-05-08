@@ -31,7 +31,45 @@ Build:  ./build-report.sh
 
 A description and illustration of the:
 
-- Design and architecture of your ITU-MiniTwit systems.
+## Design and architecture of your ITU-MiniTwit systems.
+
+Minitwit is a Twitter clone built with a Svelte frontend, a Java (Javalin) REST backend, and a PostgreSQL database. All the involved applications are containerized with Docker and deployed on DigitalOcean infrastructure using Docker Swarm for orchestration. Infrastructure provisioning is handled by OpenTofu (opensource fork of TerraForm) and Ansible, and the monitoring stack consists of Prometheus, Grafana, Loki and Grafana Alloy.
+
+### Infrastructure Architecture
+
+![alt text](diagrams/Minitwit%20-%20Request%20flow.png)
+
+The production system runs across five DigitalOcean droplets as illustrated in the above figure. Three manager-worker swarm nodes form the application cluster, one dedicated droplet hosts the PostgreSQL database, and one dedicated droplet hosts the monitoring stack. Both the database and monitoring droplets have a DigitalOcean block storage volume attached, ensuring data persists across droplet recreations.
+
+A DigitalOcean load balancer sits in front of the three swarm nodes, handling SSL termination via a Let's Encrypt certificate and distributing incoming traffic across the swarm. Each swarm node runs nginx as a reverse proxy, routing requests to the appropriate container based on the URL path — /api, /web, /swagger and /openapi route to the Java backend on port 7070, all other traffic goes to the Svelte frontend on port 80, and /grafana proxies across the private network to Grafana on the monitoring droplet. All cross-droplet communication outside the Swarm overlay network uses DigitalOcean's private network, such as connections from the swarm nodes to the database and monitoring droplets.
+
+Docker Swarm manages container orchestration across the three nodes, running three replicas each of nginx, the Java backend and the Svelte frontend. The routing mesh ensures any node can handle any request regardless of which node the container is actually running on.
+
+### Monitoring Architecture
+
+![alt text](diagrams/Minitwit%20-%20Monitoring%20flow.png)
+
+Grafana Alloy runs on all the droplets, collecting logs of all the containers on each droplet and shipping them to Loki on the monitoring droplet. Prometheus scrapes metrics from the Java backend (/metrics) and node exporter on each node every 15 seconds. Grafana provides a unified dashboard querying both Prometheus and Loki. Node exporter exposes system-level metrics about the host machine, like CPU usage, memory, disk I/O and network traffic that prometheus can scrape and pass to Grafana for visualization.
+
+### Application Architecture
+
+![alt text](diagrams/Minitwit%20-%20Component%20diagram.png)
+
+The backend follows a three-layer architecture as illustrated in the above diagram. The API layer is split into two distinct entry points: 
+- the Web API (/web/*) serving the Svelte frontend with JWT-based authentication
+- the Simulator API (/api/*) serving the course simulator with HTTP Basic Auth
+
+Controllers in each entry point delegate to a shared business layer consisting of four services, Auth, User, Message and Timeline, which use repositories to access the database. All database access goes through jOOQ for type-safe SQL queries, backed by a HikariCP connection pool.
+
+We applied this architecture because it enforces separation of concerns and encourages adherence to the single responsibility principle, as controllers handle only HTTP routing, services contain only business logic, and repositories handle only data access. This allowed us to use the same business logic for both the simulator and the Web API without duplicating code.
+The separation also made the code more maintainable. Migrating to an ORM was straightforward, as all SQL code was already isolated within the repository layer
+
+### Infrastructure as code
+
+The entire infrastructure is provisioned through code. OpenTofu provisions the DigitalOcean droplets and volumes, while Ansible handles the configuration of the VMs created by OpenTofu. Ansible executes five playbooks in sequence: base setup, Swarm initialization, database configuration, monitoring setup and application deployment. A single provision.sh script runs the full provisioning sequence from scratch. Both tools are designed to be idempotent, meaning the scripts can safely be rerun if anything fails during the process.
+
+-----------
+
 - All dependencies of your ITU-MiniTwit systems on all levels of abstraction and development stages. That is, list and briefly describe all technologies and tools you applied and depend on.
 - Describe the current state of your systems, for example using results of static analysis and quality assessments.
 

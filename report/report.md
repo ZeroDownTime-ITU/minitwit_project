@@ -101,6 +101,7 @@ GitHub Actions was chosen for its native integration with our existing GitHub re
 ![alt text](diagrams/CICD_Pipeline_StateVersion.png)
 
 ## Monitoring Architecture and Data Flow
+This section explains the architecture of our monitoring setup and how metrics flow through the system from the application to visualization. It describes how Prometheus collects and stores time-series data using labels and repeated sampling, and how Grafana uses this data to present meaningful insights such as request rates, trends, and error patterns. Together, these components provide visibility into system behavior and application performance over time.
 
 ### Dashboard Structure Basic Model
 
@@ -113,7 +114,7 @@ Our monitoring setup consists of three components:
 ### How metrics are stored (labels + time)
 
 Each metric is not just one value.
-It is split into multiple counters based on labels, and each of those is tracked over time.
+It is split into multiple counters based on labels, and each of those are tracked over time.
 
 ### Labels (different counters)
 
@@ -144,6 +145,11 @@ Each of these is its own counter. Prometheus calls /metrics repeatedly every 15 
 00:15 -> 3
 00:30 -> 5
 ```
+
+The graph below shows the HTTP request rate over time for different API endpoints and statuses collected by Prometheus and visualized in Grafana. Each colored line represents a separate time series created from unique label combinations such as endpoint path and HTTP status, making it possible to monitor traffic patterns, successful requests, and error responses independently.
+
+![Http Requests dashboard in Grafana](images/httpRequestGrafana.jpg)
+
 
 For every label combination, Prometheus stores a timeline of values. Many counters (labels). Each with its own history - hence each unique set of labels creates its own time series that Prometheus tracks over time.
 
@@ -196,9 +202,14 @@ Loki collects these logs and stores them over time, similar to how Prometheus st
 Logs are stored as a timeline of events rather than a sequence of numbers.
 Instead of computing rates or averages, logs are queried to:
 
-- find specific events
-- trace errors
-- understand what happened at a given point in time
+- Find specific events
+- Trace errors
+- Understand what happened at a given point in time
+
+The dashboard shows centralized logging for the Nginx and Svelte containers, including live log streams and event timelines. This makes it possible to monitor incoming traffic, inspect request details, identify warnings, and investigate abnormal behavior or errors in real time.
+
+![Centralized logging in Grafana](images/logsGrafana.jpg)
+
 
 **Loki's Role of Grafana**
 Grafana queries Loki and visualizes logs in a searchable format.
@@ -208,6 +219,10 @@ The system works because of the following separation:
 - Loki - builds history by storing logs over time
 
 ## Security
+
+This section outlines the primary security risks identified in our system architecture and development workflow. The purpose is to highlight potential vulnerabilities, assess their impact and likelihood, and describe the measures implemented to reduce these risks. Security is considered throughout both infrastructure, development practices, and dependency management to ensure system stability, integrity, and availability. The risk assessments are based on the impact/probability matrix shown above, where each risk is evaluated according to its potential impact and likelihood of occurrence. The subsections below describe the most relevant security concerns and their corresponding mitigation strategies.
+
+![Risk - Impact & probabilty](images/riskGrid.jpg)
 
 ### Git Break In {#git-break-in}
 

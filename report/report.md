@@ -69,13 +69,13 @@ The separation also made the code more maintainable. Migrating to an ORM was str
 
 The entire infrastructure is provisioned through code. OpenTofu provisions the DigitalOcean droplets and volumes, while Ansible handles the configuration of the VMs created by OpenTofu. Ansible executes five playbooks in sequence: base setup, Swarm initialization, database configuration, monitoring setup and application deployment. A single provision.sh script runs the full provisioning sequence from scratch. Both tools are designed to be idempotent, meaning the scripts can safely be rerun if anything fails during the process.
 
-## Technology & System choice (Magnus tries to write something that may or may not make sense)
+## Technology & System choice 
 
-Java was chosen as the backend language due to the team's prior familiarity with it. For the web framework we chose Javalin, a lightweight alternative to larger frameworks like Spring Boot (this was a consideration in terms of the scope of the project in general **THOUGHTS AROUND THIS?**) — it requires far less configuration and setup, which suited the scope of having 5 nodes in total. **(feel free to change this if there are any one who disagrees)**
+Java was chosen as the backend language due to the team's prior familiarity with it. For the web framework we chose Javalin, a lightweight alternative to larger frameworks like Spring Boot (this was a consideration in terms of the scope of the project in general). This also means it requires far less configuration and setup, which suited the scope of having 5 nodes in total.
 
-For container orchestration we used Docker Swarm rather than Kubernetes. Swarm is simpler to operate and sufficient for the scale of this project. The group did also consider Kubernetes but this was scraped due to complexity **(OR WHAT WOULD BE SMART TO WRITE?)**. For cloud hosting we chose DigitalOcean, as the team had access to credits through GitHub Education.
+For container orchestration we used Docker Swarm rather than Kubernetes. Swarm is simpler to operate and sufficient for the scale of this project. The group did also consider Kubernetes but this was scraped due to complexity. For cloud hosting, we chose DigitalOcean due to available credits through GitHub Education and its recommendation within the course. The group could have gone with self-hosting, but the consequence of doing so would have been introducing more managing. The group therefore decided to use DigitalOcean and have more of a focus on the application.
 
-In the early stages of the course, virtual machines were provisioned using Vagrant with a DigitalOcean provider and configured via a `provision.sh` script. In the latter half of the course, the group migrated over to OpenTofu and Ansible for configuration management due to Ansible's promise of idempotency. The reason for this change to Ansible was that we were able to use Ansible's Vault for storing environment variable instead of having a `.env` file which had to manually edited on each computer as to not accidentally publish keys or other confidential information.
+In the early stages of the course, virtual machines were provisioned using Vagrant with a DigitalOcean provider and configured via a `provision.sh` script. In the latter half of the course, the group migrated over to OpenTofu and Ansible for configuration management. The reason for this change to Ansible was that we were able to use Ansible's Vault for storing environment variable instead of having a `.env` file which had to manually edited on each computer as to not accidentally publish keys or other confidential information. In addition to this, we also migrated from Vagrant to Ansible was due to readability. Our `provision.sh` got cluttered due to a lot of if-statements (hence why we turned to Ansible for the idempotency).
 
 ### Dependencies
 
@@ -101,7 +101,6 @@ GitHub Actions was chosen for its native integration with our existing GitHub re
 ![alt text](diagrams/CICD_Pipeline_StateVersion.png)
 
 ## Monitoring Architecture and Data Flow
-This section explains the architecture of our monitoring setup and how metrics flow through the system from the application to visualization. It describes how Prometheus collects and stores time-series data using labels and repeated sampling, and how Grafana uses this data to present meaningful insights such as request rates, trends, and error patterns. Together, these components provide visibility into system behavior and application performance over time.
 
 ### Dashboard Structure Basic Model
 
@@ -114,7 +113,7 @@ Our monitoring setup consists of three components:
 ### How metrics are stored (labels + time)
 
 Each metric is not just one value.
-It is split into multiple counters based on labels, and each of those are tracked over time.
+It is split into multiple counters based on labels, and each of those is tracked over time.
 
 ### Labels (different counters)
 
@@ -145,11 +144,6 @@ Each of these is its own counter. Prometheus calls /metrics repeatedly every 15 
 00:15 -> 3
 00:30 -> 5
 ```
-
-The graph below shows the HTTP request rate over time for different API endpoints and statuses collected by Prometheus and visualized in Grafana. Each colored line represents a separate time series created from unique label combinations such as endpoint path and HTTP status, making it possible to monitor traffic patterns, successful requests, and error responses independently.
-
-![Http Requests dashboard in Grafana](images/httpRequestGrafana.jpg)
-
 
 For every label combination, Prometheus stores a timeline of values. Many counters (labels). Each with its own history - hence each unique set of labels creates its own time series that Prometheus tracks over time.
 
@@ -202,14 +196,9 @@ Loki collects these logs and stores them over time, similar to how Prometheus st
 Logs are stored as a timeline of events rather than a sequence of numbers.
 Instead of computing rates or averages, logs are queried to:
 
-- Find specific events
-- Trace errors
-- Understand what happened at a given point in time
-
-The dashboard shows centralized logging for the Nginx and Svelte containers, including live log streams and event timelines. This makes it possible to monitor incoming traffic, inspect request details, identify warnings, and investigate abnormal behavior or errors in real time.
-
-![Centralized logging in Grafana](images/logsGrafana.jpg)
-
+- find specific events
+- trace errors
+- understand what happened at a given point in time
 
 **Loki's Role of Grafana**
 Grafana queries Loki and visualizes logs in a searchable format.
@@ -219,10 +208,6 @@ The system works because of the following separation:
 - Loki - builds history by storing logs over time
 
 ## Security
-
-This section outlines the primary security risks identified in our system architecture and development workflow. The purpose is to highlight potential vulnerabilities, assess their impact and likelihood, and describe the measures implemented to reduce these risks. Security is considered throughout both infrastructure, development practices, and dependency management to ensure system stability, integrity, and availability. The risk assessments are based on the impact/probability matrix shown above, where each risk is evaluated according to its potential impact and likelihood of occurrence. The subsections below describe the most relevant security concerns and their corresponding mitigation strategies.
-
-![Risk - Impact & probabilty](images/riskGrid.jpg)
 
 ### Git Break In {#git-break-in}
 

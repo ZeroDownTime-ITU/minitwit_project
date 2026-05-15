@@ -262,15 +262,11 @@ The system works because of the following separation:
 
 # Reflection Perspective
 
-Describe the biggest issues, how you solved them, and which are major lessons learned with regards to:
+The most instructive problems of the semester shared a common structure: an assumption that held in a simple environment broke when that environment became more complex. Migrating from SQLite to PostgreSQL (PR #39, c67392d) and from a single droplet to a five-node Docker Swarm (92a333a, 961602a) were nominally separate changes, but the second exposed a flaw introduced by the first — the simulator's latest ID was stored in a Java AtomicInteger, invisible as a bug on one node, and deterministically wrong across three replicas sharing a load balancer. Moving that state into the database (PR #111, 96cbc1d–aa23b2b) fixed it, but only once the Swarm migration made the problem visible. The same pattern applied to the CI/CD pipeline, which had to be rebuilt from a single-droplet SSH script into an Ansible-coordinated deployment (12a8ddb) with idempotency as a hard requirement (033f2a7, a70f05b) — because a script that breaks on the second run is a liability precisely when infrastructure is under pressure.
 
-- evolution and refactoring
-- operation, and
-- maintenance
+Observability arrived late and made this more painful than it needed to be. Prometheus, Grafana, and Loki/Alloy were assembled reactively across March and April (445b053, 6a947cf) after the team had already spent time debugging production with System.out.println (b27e07e). Once in place the monitoring stack was genuinely valuable — Hikari pool metrics (77236d9) diagnosed the connection leak, Prometheus tracking caught the latestValue divergence — but both bugs had already been running in production before the tooling existed to catch them. Every subsequent infrastructure change also required follow-up fixes to the monitoring configuration (7ba4d18, ea6aeaf, 3824880) because it was never designed alongside the infrastructure, only added on top of it.
 
-of your ITU-MiniTwit systems. Link back to respective commit messages, issues, tickets, etc. to illustrate these.
-
-Also reflect and describe what was the "DevOps" style of your work. For example, what did you do differently to previous development projects and how did it work?
+The third category of friction is the one least visible in the commit history: the overhead of five developers sharing one codebase, one deployment target, and no agreed system for managing credentials or local environments. "Works on my machine" failures were a persistent early tax, partially addressed by .env.template (06cca45) and Ansible, but never fully resolved — the OpenTofu state file still isn't shared, meaning infrastructure changes remain bottlenecked through one machine. The lesson across all three of these is the same: investment in shared infrastructure — observability, reproducible environments, shared state — is easy to defer when a team is small and moving fast, and the cost of deferring it compounds quietly until a topology change or a production incident makes it suddenly visible.
 
 
 \newpage

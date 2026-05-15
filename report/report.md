@@ -90,7 +90,7 @@ By using OpenTofu in conjunction with Ansible, we have been able to more easily 
 
 # Process Perspective
 
-## CI/CD Pipline
+## CI/CD Pipeline
 
 ### Github Workflows | CI/CD as code
 

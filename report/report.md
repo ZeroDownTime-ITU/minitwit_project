@@ -260,16 +260,17 @@ The system works because of the following separation:
 
 # Reflection Perspective
 
-Through the course of the semester we adhered to the weekly schedule and as the complexity of the project grew we hit issues covered in the lectures almost exactly as expected with the unique challenge being deciding how to solve our issue. The best example was during the migration to the new swarmed archetecture. 
+Describe the biggest issues, how you solved them, and which are major lessons learned with regards to:
 
-During migration, we decided to copy the database over manually so we could be sure that we had all of the data in the new database before pointing the load balanacer at the five droplet archetecture. This solved the issue we had faced before when we migrated from SQLite to PostgreSQL (PR #39, c67392d) where we lost all of our data. However, that introduced a new issue where we copied the old version of the database ```bash docker exec -i <containername> pg_restore --clean -U <postgresuser> -d <databasename> < /tmp/backup.dump ``` this code copied not just the data but also the existing indexes and tables. this would have been fine, great in-fact, but it circumvented the schema.sql code being the zone of truth. There was a difference between the simulator_state table on the server and the on in our schema.sql which caused a bug as soon as we started handling api requests on the new system. Because of the observability we had set up, the grafana dashboards were able to help us debug the issue. 
-![alt text](images/getLatestError.png)
-Corbjin saw the latestID bottom out and quickly fixed the database to give the state_key a unique constraint which helped resolved the issue.
+- evolution and refactoring
+- operation, and
+- maintenance
 
-(52f78a3,6bb1f4b,116b4c0,975ccbd,06cca45,aaa719c,ecc2934,...)
-The more profound and pervasive issue we faced can be found peppered through our commit history the overhead of five developers sharing one codebase, one deployment target, and no stardardized system for managing credentials or local environments. We tried devcontainers early on but that didn't solve our needs. Magnus spent time trying to organize the .env file so that each of our public keys were put on Digital Ocean and that worked somewhat but our keys were hardcoded for a bit in the beginning. introducing Ansible and OpenTofu made a big difference and storing secrets in the vault was so much easier to debug and plan for. This however means that we would need to find a way to share access to the state file so that anyone on the team could run the ansible playbooks however this was out of the scope for our goals with the project.
+of your ITU-MiniTwit systems. Link back to respective commit messages, issues, tickets, etc. to illustrate these.
 
-What this project did differently from previous development work was treat infrastructure, deployment, and operations as first-class engineering concerns rather than end-of-project chores. From week three we introduced the CI/CD pipline (de742b3), infrastructure as code, version-controlled dashboards (24aff3c), and automated semantic versioning (ea74933). These payed dividends when issues arose because they shortened the distance between a problem occurring in production and a developer understanding why. The Grafana dashboard catching the latestID bug during migration is the clearest proof of that. 
+Also reflect and describe what was the "DevOps" style of your work. For example, what did you do differently to previous development projects and how did it work?
+
+
 \newpage
 
 # Use of Generative AI

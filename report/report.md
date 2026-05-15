@@ -59,11 +59,9 @@ The backend follows a three-layer architecture as illustrated in the above diagr
 - the Web API (/web/*) serving the Svelte frontend with JWT-based authentication
 - the Simulator API (/api/*) serving the course simulator with HTTP Basic Auth
 
-Controllers in each entry point delegate to a shared business layer consisting of four services, Auth, User, Message and Timeline, which use repositories to access the database. All database access goes through jOOQ for type-safe SQL queries, backed by a HikariCP connection pool.
+Controllers handle incoming requests and pass the work to the services which are divided up into four different domains: authentication, users, messages and timeline. These services contain the core business logic of the Minitwit application. To read and write data, the services rely on three repositories — user, message, and follower — each responsible for interacting with its corresponding table in the database
 
-We applied this architecture because it enforces separation of concerns and encourages adherence to the single responsibility principle, as controllers handle only HTTP routing, services contain only business logic, and repositories handle only data access. This allowed us to use the same business logic for both the simulator and the Web API without duplicating code.
-
-The separation also made the code more maintainable. Migrating to an ORM was straightforward, as all SQL code was already isolated within the repository layer
+We applied this architecture because it enforces separation of concerns and encourages adherence to the single responsibility principle, as controllers handle only HTTP routing, services contain only business logic, and repositories handle only data access. This allowed us to use the same business logic for both the simulator and the Web API without duplicating code. The separation also made the code more maintainable. Migrating to an ORM was straightforward, as all SQL code was already isolated within the repository layer
 
 ### Infrastructure as code
 

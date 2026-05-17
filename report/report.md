@@ -100,176 +100,54 @@ GitHub Actions was chosen for its native integration with our existing GitHub re
 
 ## Monitoring Architecture and Data Flow
 
-### Dashboard Structure Basic Model
+Yes — the monitoring section is the main problem. As discussed earlier, it reads like a Prometheus tutorial rather than a description of your system. The logging section has the same issue.
 
-Our monitoring setup consists of three components:
+Here's a drop-in replacement for everything between the CI/CD section and Security:
 
-- Application - Javalin app - produces metrics
-- Prometheus - collects and stores metrics over time
-- Grafana - visualizes metrics
+---
 
-### How metrics are stored (labels + time)
+## Monitoring Architecture and Data Flow
 
-Each metric is not just one value.
-It is split into multiple counters based on labels, and each of those is tracked over time.
+Our monitoring setup consists of three components working in sequence: the Javalin backend exposes metrics at `/metrics`, Prometheus scrapes that endpoint every 15 seconds and stores the resulting time series, and Grafana queries Prometheus to visualize request rates, error rates, and trends over time. Each metric is tracked across method, path, and status code, meaning Prometheus maintains a separate time series for each unique combination, making it possible to monitor per-endpoint traffic and error rates independently.
 
-### Labels (different counters)
+![Http Requests dashboard in Grafana](images/httpRequestGrafana.jpg)
 
-When we define:
+For logging, Grafana Alloy runs on each droplet and ships container logs to Loki on the monitoring droplet. Grafana queries Loki alongside Prometheus, giving a unified view of metrics and logs on the same dashboard and making it possible to correlate a spike in error rates with the specific log entries that caused it.
 
-```
-.labelNames("method", "path", "status")
-```
+![Centralized logging in Grafana](images/logsGrafana.jpg)
 
-we are creating a separate counter for each combination of method, path and status so at one point in time, the application exposes:
+We built three dashboards covering different layers of the system. The HTTP Requests dashboard tracked request rate, failure rate, response times, and total request counts per endpoint which became the most operationally useful, giving direct visibility into simulator traffic and API health. The JVM Resources dashboard monitored heap usage, thread states, garbage collection, and Hikari connection pool saturation and acquisition latency. The Minitwit Server Health dashboard used node exporter to track CPU, memory, disk usage, and disk I/O across the droplets. In combination with the built dashboards we made use of the Grafana Logs drilldown via Loki. After some lable engineering, the log drilldown allowed us to inspect live log streams per container, namely, nginx, the Java backend, Svelte, and the monitoring stack itself. A Postgres dashboard was set up to track total users, messages, and follows, though it was never fully wired up to a data source.
 
-```
-minitwit_http_requests_total{method="GET",  path="/api/msgs",  status="200"} = 10
-minitwit_http_requests_total{method="POST", path="/api/msgs",  status="200"} = 5
-minitwit_http_requests_total{method="GET",  path="/api/fllws", status="404"} = 2
-```
-
-Each of these is its own counter. Prometheus calls /metrics repeatedly every 15 seconds and stores the values as such:
-
-```
-(GET, /api/msgs, 200)
-00:00 -> 5
-00:15 -> 7
-00:30 -> 10
-
-(POST, /api/msgs, 200)
-00:00 -> 2
-00:15 -> 3
-00:30 -> 5
-```
-
-For every label combination, Prometheus stores a timeline of values. Many counters (labels). Each with its own history - hence each unique set of labels creates its own time series that Prometheus tracks over time.
-
-### How Queries Work
-
-Prometheus stores all collected snapshots as a time series `[100, 120, 150, ...]`
-Historical data is created by Prometheus repeatedly sampling the application.
-Functions like: `rate(minitwit_http_requests_total[5m])` work by comparing stored values over time: `(150 - 120) / time`
-
-This allows Prometheus to compute:
-
-- request rate (requests per second)
-- trends over time
-- error rates etc
-
-### Role of Grafana
-
-Grafana does not store or compute metrics it queries Prometheus then visualizes the returned time series data. The system works because of the following separation:
-
-- Application - only knows the current value
-- Prometheus - builds history by sampling repeatedly
-
-Without Prometheus, there is no history
-Without history, there are no rates or trends
-
-### Logging Architecture and Data Flow
-
-**How logs are stored**
-
-Logs are not numeric values like metrics but textual events describing what happens in the system. Each log entry represents a specific event such as an error, request, or system message.
-The application produces logs using a logger, for example:
-
-```
-log.error(...)
-log.info(...)
-```
-
-At one point in time, the application may produce logs such as:
-
-```
-User login failed for user X
-Request to /api/msgs returned 500
-User Y followed user Z
-```
-
-Each of these is an individual log entry.
-Loki collects these logs and stores them over time, similar to how Prometheus stores metrics, but without aggregating them into numeric values.
-
-**How logs are queried**
-Logs are stored as a timeline of events rather than a sequence of numbers.
-Instead of computing rates or averages, logs are queried to:
-
-- find specific events
-- trace errors
-- understand what happened at a given point in time
-
-**Loki's Role of Grafana**
-Grafana queries Loki and visualizes logs in a searchable format.
-The system works because of the following separation:
-
-- Application - produces log messages
-- Loki - builds history by storing logs over time
 
 ## Security
 
-### Git Break In {#git-break-in}
-
-**Risk level:** High (Impact: High, Probability: Medium.)
-
-**Description:** If a team member's GitHub account is compromised, an attacker can grant themselves admin rights, push malicious code, and approve pull requests.
-
-**Mitigation & Scenarios:** We enforce two-factor authentication and restrict admin privileges through RBAC, including a super-admin role.
-
-### Java Dependencies {#java-dependencies}
-
-**Risk level:** High (Impact: High, Probability: Medium.)
-
-**Description:** Our system relies heavily on the Javalin framework and third-party libraries for all endpoints and HTTP(S) traffic.
-
-**Mitigation & Scenarios:** We keep all dependencies updated to stable versions and monitor for known vulnerabilities.
-
-### Java Database {#java-database}
-
-**Risk level:** Medium (Impact: Medium, Probability: Medium.)
-
-**Description:** We use JOOQ ORM and the PostgreSQL JDBC driver to interact with the database, which can introduce SQL-related risks.
-
-**Mitigation & Scenarios:** We avoid raw SQL concatenation and ensure all database-related libraries are kept up to date.
-
-### Digital Ocean {#digital-ocean}
-
-**Risk level:** High (Impact: High, Probability: Medium.)
-
-**Description:** Deletion of droplets or volumes can lead to downtime and data loss.
-
-**Mitigation & Scenarios:** We perform daily backups and use Terraform to recreate infrastructure if resources are deleted.
-
-### Node Modules (NPM) {#node-modules}
-
-**Risk level:** Medium (Impact: Medium, Probability: Medium.)
-
-**Description:** Third-party Node dependencies may introduce vulnerabilities or be compromised through supply chain attacks.
-
-**Mitigation & Scenarios:** We audit dependencies (e.g. npm audit), keep packages updated, and review new additions carefully.
-
-### UFW {#ufw}
-
-**Risk level:** High (Impact: High, Probability: Medium.)
-
-**Description:** If the firewall is misconfigured, unnecessary ports may be exposed. Docker port mappings can bypass firewall rules.
-
-**Mitigation & Scenarios:** We deny incoming traffic by default, allow only required ports, restrict SSH access, and ensure Docker does not bypass UFW.
-
+| Risk | Risk Level | Impact | Probability | Description | Mitigation |
+|------|------------|--------|-------------|-------------|------------|
+| Git Break In | High | High | Medium | If a team member's GitHub account is compromised, an attacker can grant themselves admin rights, push malicious code, and approve pull requests. | Enforce two-factor authentication and restrict admin privileges through RBAC, including a super-admin role. |
+| Java Dependencies | High | High | Medium | The system relies heavily on the Javalin framework and third-party libraries for all endpoints and HTTP(S) traffic. | Keep all dependencies updated to stable versions and monitor for known vulnerabilities. |
+| Java Database | Medium | Medium | Medium | JOOQ ORM and the PostgreSQL JDBC driver are used to interact with the database, which can introduce SQL-related risks. | Avoid raw SQL concatenation and ensure all database-related libraries are kept up to date. |
+| Digital Ocean | High | High | Medium | Deletion of droplets or volumes can lead to downtime and data loss. | Perform daily backups and use Terraform to recreate infrastructure if resources are deleted. |
+| Node Modules (NPM) | Medium | Medium | Medium | Third-party Node dependencies may introduce vulnerabilities or be compromised through supply chain attacks. | Audit dependencies (e.g. `npm audit`), keep packages updated, and review new additions carefully. |
+| UFW | High | High | Medium | If the firewall is misconfigured, unnecessary ports may be exposed. Docker port mappings can bypass firewall rules. | Deny incoming traffic by default, allow only required ports, restrict SSH access, and ensure Docker does not bypass UFW. |
 
 \newpage
 
 # Reflection Perspective
 
-Through the course of the semester we adhered to the weekly schedule and as the complexity of the project grew we hit issues covered in the lectures almost exactly as expected with the unique challenge being deciding how to solve our issue. The best example was during the migration to the new swarmed archetecture. 
+Through the course of the semester we adhered to the weekly schedule and as the complexity of the project grew we hit issues covered in the lectures almost exactly as expected with the unique challenge being deciding how to solve our issue. The best example was during the migration to the new swarmed architecture.
 
-During migration, we decided to copy the database over manually so we could be sure that we had all of the data in the new database before pointing the load balanacer at the five droplet archetecture. This solved the issue we had faced before when we migrated from SQLite to PostgreSQL (PR #39, c67392d) where we lost all of our data. However, that introduced a new issue where we copied the old version of the database ```bash docker exec -i <containername> pg_restore --clean -U <postgresuser> -d <databasename> < /tmp/backup.dump ``` this code copied not just the data but also the existing indexes and tables. this would have been fine, great in-fact, but it circumvented the schema.sql code being the zone of truth. There was a difference between the simulator_state table on the server and the on in our schema.sql which caused a bug as soon as we started handling api requests on the new system. Because of the observability we had set up, the grafana dashboards were able to help us debug the issue. 
-![alt text](images/getLatestError.png)
-Corbjin saw the latestID bottom out and quickly fixed the database to give the state_key a unique constraint which helped resolved the issue.
+During migration, we decided to copy the database over manually so we could be sure that we had all of the data in the new database before pointing the load balancer at the five droplet architecture. This solved the issue we had faced before when we migrated from SQLite to PostgreSQL (PR #39, `c67392d`) where we lost all of our data. However, that introduced a new issue where we copied the old version of the database: `docker exec -i <containername> pg_restore --clean -U <postgresuser> -d <databasename> < /tmp/backup.dump`
 
-(52f78a3,6bb1f4b,116b4c0,975ccbd,06cca45,aaa719c,ecc2934,...)
-The more profound and pervasive issue we faced can be found peppered through our commit history the overhead of five developers sharing one codebase, one deployment target, and no stardardized system for managing credentials or local environments. We tried devcontainers early on but that didn't solve our needs. Magnus spent time trying to organize the .env file so that each of our public keys were put on Digital Ocean and that worked somewhat but our keys were hardcoded for a bit in the beginning. introducing Ansible and OpenTofu made a big difference and storing secrets in the vault was so much easier to debug and plan for. This however means that we would need to find a way to share access to the state file so that anyone on the team could run the ansible playbooks however this was out of the scope for our goals with the project.
+which copied not just the data, but also the existing indexes and tables. Normally, this method would have worked for our needs, but it circumvented `schema.sql` being the zone of truth. There was a difference between the `simulator_state` table on the server and the one in our `schema.sql` which caused a bug as soon as we started handling API requests on the new system. Because of the observability we had set up, the Grafana dashboards were able to help us debug the issue.
 
-What this project did differently from previous development work was treat infrastructure, deployment, and operations as first-class engineering concerns rather than end-of-project chores. From week three we introduced the CI/CD pipline (de742b3), infrastructure as code, version-controlled dashboards (24aff3c), and automated semantic versioning (ea74933). These payed dividends when issues arose because they shortened the distance between a problem occurring in production and a developer understanding why. The Grafana dashboard catching the latestID bug during migration is the clearest proof of that. 
+![Grafana dashboard showing latestID bottoming out](images/getLatestError.png)
+
+Corbijn saw the `latestID` bottom out and quickly fixed the database to give `state_key` a unique constraint, which resolved the issue.
+
+The more profound and pervasive issue we faced can be found peppered through our commit history: the overhead of five developers sharing one codebase, one deployment target, and no standardized system for managing credentials or local environments. We tried devcontainers early on (`52f78a3`) but that didn't solve our needs. Magnus spent time organizing the `.env` file so that each of our public keys were put on DigitalOcean (`ecc2934`, `6bb1f4b`) and that worked somewhat, but our keys were hardcoded for a bit in the beginning. A shared `.env.template` arrived six weeks in (`06cca45`), with further env file fixes still needed after that (`975ccbd`, `aaa719c`, `116b4c0`). Introducing Ansible (`961602a`) and OpenTofu (`92a333a`) made a big difference and storing secrets in the Vault was so much easier to debug and plan for. This however means that we would need to find a way to share access to the state file so that anyone on the team could run the Ansible playbooks. As a team we decided this was out of scope for our goals with the project.
+
+What this project did differently from previous development work was treat infrastructure, deployment, and operations as first-class engineering concerns rather than end-of-project chores. From week three we introduced the CI/CD pipeline (`de742b3`), infrastructure as code, version-controlled dashboards (`24aff3c`), and automated semantic versioning (`ea74933`). These paid dividends when issues arose because they shortened the distance between a problem occurring in production and a developer understanding why. The Grafana dashboard catching the `latestID` bug during migration is the clearest proof of that.
+
 \newpage
 
 # Use of Generative AI

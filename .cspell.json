@@ -74,7 +74,8 @@
     "drilldown",
     "postgresuser",
     "databasename",
-    "devcontainers"
+    "devcontainers",
+    "Hikari"
   ],
   "flagWords": []
 }

@@ -77,9 +77,11 @@ In the early stages of the course, virtual machines were provisioned using Vagra
 
 ### Dependencies
 
-The diagram below shows the dependencies across the project such as build tools, libraries and images for docker containers.
+The two diagrams below shows the dependencies across the project such as build tools, libraries and images for docker containers.
 
-![Dependency](images/dependency-diagram.svg)
+![Dependency for the app](images/dependency-diagram-app.svg)
+![Dependency for the infrastructure](images/dependency-diagram-infra.svg)
+
 
 `Minitwit-java` uses the `pom.xml` file for managing its dependencies whereas the Svelte frontend uses npm (node package manager) to manage its dependencies. The infrastructure of the VMs is being handled by Terraform which creates the necessary droplets and volumes (for data storage) through the `main.tf` script - Ansible is then provisioning each machine with `base.yml` - installing all the shared dependencies across nodes - and then, depending on the VM, provisions the VM with either `swarm.yml`, `db.yml`, `monitoring.yml`. Then the final *playbook* `deploy.yml` deploys the docker swarm/stack.
 

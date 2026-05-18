@@ -120,6 +120,8 @@ We built three dashboards covering different layers of the system. The HTTP Requ
 
 ## Security
 
+The team maintained a security risk analysis throughout the project. The table below outlines identified vulnerabilities, their assessed risk levels, and our mitigation strategies.
+
 | Risk | Risk Level | Impact | Probability | Description | Mitigation |
 |------|------------|--------|-------------|-------------|------------|
 | Git Break In | High | High | Medium | If a team member's GitHub account is compromised, an attacker can grant themselves admin rights, push malicious code, and approve pull requests. | Enforce two-factor authentication and restrict admin privileges through RBAC, including a super-admin role. |

@@ -9,3 +9,6 @@ sleep 10
 
 cd ../ansible
 ansible-playbook -i inventory.digitalocean.yml site.yml
+
+
+# adding comment. 

@@ -14,6 +14,6 @@ scrape_configs:
   - job_name: 'node'
     static_configs:
       - targets:
-{% for host in groups['swarm'] %}
+{% for host in groups['swarm'] + groups['db'] + groups['monitoring'] %}
         - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:9100'
 {% endfor %}

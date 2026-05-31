@@ -11,7 +11,7 @@ scrape_configs:
         - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:7070'
 {% endfor %}
 
-  - job_name: 'node'
+  - job_name: 'node-exporter'
     static_configs:
       - targets:
 {% for host in groups['swarm'] + groups['db'] + groups['monitoring'] %}

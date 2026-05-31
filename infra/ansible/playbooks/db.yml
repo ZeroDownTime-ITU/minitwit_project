@@ -30,6 +30,8 @@
         image: postgres:15-alpine
         state: started
         restart_policy: always
+        ports:
+          - "5432:5432"
         env:
           POSTGRES_USER: "{{ postgres_user }}"
           POSTGRES_PASSWORD: "{{ postgres_password }}"

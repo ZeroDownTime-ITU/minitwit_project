@@ -97,9 +97,3 @@
       copy:
         src: files/alloy-config-monitoring.alloy
         dest: /etc/alloy/config.alloy
-
-    - name: Restart alloy container
-      docker_container:
-        name: monitoring-alloy-1
-        state: started
-        restart: yes

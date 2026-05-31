@@ -59,6 +59,12 @@
         src: ../../../docker-compose.monitoring.yml
         dest: /monitoring/docker-compose.yml
 
+    - name: Stop monitoring stack if running
+      shell: docker compose down
+      args:
+        chdir: /monitoring
+      ignore_errors: true
+
     - name: Start monitoring stack
       shell: docker compose up -d
       args:

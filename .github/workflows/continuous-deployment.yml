@@ -128,6 +128,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Verify DO token
+        env:
+          DIGITAL_OCEAN_KEY: ${{ secrets.DO_TOKEN }}
+        run: |
+          echo "Length: ${#DIGITAL_OCEAN_KEY}"
+          curl -s \
+            -H "Authorization: Bearer $DIGITAL_OCEAN_KEY" \
+            https://api.digitalocean.com/v2/account
+
       - name: Install Ansible
         run: |
           pip install ansible

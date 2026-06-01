@@ -29,7 +29,7 @@
     - name: Deploy stack
       shell: docker stack deploy --with-registry-auth -c /root/docker-compose.app.yml minitwit
       environment:
-        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}:5432/minitwitdb"
+        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].private_ip }}:5432/minitwitdb"
         POSTGRES_USER: "{{ postgres_user }}"
         POSTGRES_PASSWORD: "{{ postgres_password }}"
         JWT_SECRET: "{{ jwt_secret }}"

@@ -30,6 +30,5 @@ loki.source.docker "default" {
 
 loki.write "default" {
   endpoint {
-    url = "http://{{ monitoring_private_ip }}:3100/loki/api/v1/push"
-  }
+    url = "http://{{ hostvars[groups['monitoring'][0]].private_ip }}:3100/loki/api/v1/push"  }
 }

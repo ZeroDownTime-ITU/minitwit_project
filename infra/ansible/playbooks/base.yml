@@ -3,6 +3,10 @@
   become: true
 
   tasks:
+    - name: Set private IP fact for all nodes
+      ansible.builtin.set_fact:
+        private_ip: "{{ do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}"
+
     - name: Wait for apt lock to be released
       shell: while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
       changed_when: false

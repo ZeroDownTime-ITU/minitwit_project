@@ -8,14 +8,14 @@ scrape_configs:
     static_configs:
       - targets:
 {% for host in groups['swarm'] %}
-        - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:7070'
+          - '{{ hostvars[host].private_ip }}:7070'
 {% endfor %}
 
   - job_name: 'node-exporter'
     static_configs:
 {% for host in groups['swarm'] + groups['db'] + groups['monitoring'] %}
       - targets:
-          - '{{ hostvars[host].do_networks.v4 | selectattr("type", "eq", "private") | map(attribute="ip_address") | first }}:9100'
+          - '{{ hostvars[host].private_ip }}:9100'
         labels:
           instance: '{{ hostvars[host].do_name }}'
 {% endfor %}

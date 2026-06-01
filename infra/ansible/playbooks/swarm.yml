@@ -25,5 +25,5 @@
       shell: >
         docker swarm join
         --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}
-        {{ hostvars[groups['swarm'][0]].ansible_host }}:2377
+        {{ hostvars[groups['swarm'][0]].private_ip }}:2377
       ignore_errors: true

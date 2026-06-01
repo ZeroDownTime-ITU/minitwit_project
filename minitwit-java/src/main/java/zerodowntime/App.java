@@ -104,19 +104,18 @@ public class App {
             });
 
             config.routes.before("/web/*", ctx -> {
-                if (PUBLIC_ROUTES.stream().anyMatch(ctx.path()::startsWith))
-                    return;
-
                 String token = ctx.cookie("token");
-                if (token == null) {
+
+                if (token != null && !token.isBlank()) {
+                    try {
+                        DecodedJWT jwt = JwtUtils.verifyToken(token);
+                        ctx.attribute("userId", jwt.getClaim("userId").asInt());
+                        ctx.attribute("username", jwt.getClaim("username").asString());
+                    } catch (JWTVerificationException e) {
+                        throw new UnauthorizedResponse("Invalid token");
+                    }
+                } else if (PUBLIC_ROUTES.stream().noneMatch(ctx.path()::startsWith)) {
                     throw new UnauthorizedResponse("Missing token");
-                }
-                try {
-                    DecodedJWT jwt = JwtUtils.verifyToken(token);
-                    ctx.attribute("userId", jwt.getClaim("userId").asInt());
-                    ctx.attribute("username", jwt.getClaim("username").asString());
-                } catch (JWTVerificationException e) {
-                    throw new UnauthorizedResponse("Invalid token");
                 }
             });
 

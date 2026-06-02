@@ -1,17 +1,17 @@
-plugin: community.digitalocean.digitalocean
-oauth_token: "{{ lookup('env', 'DIGITAL_OCEAN_KEY') }}"
-attributes:
-  - id
-  - name
-  - networks
-  - region
-  - size_slug
-  - tags
-compose:
-  ansible_host: do_networks.v4 | selectattr('type', 'eq', 'public') | map(attribute='ip_address') | first
-  ansible_user: "'root'"
-  ansible_ssh_private_key_file: "'~/.ssh/id_ed25519'"
-groups:
-  swarm: "'swarm' in do_tags"
-  db: "'db' in do_tags"
-  monitoring: "'monitoring' in do_tags"
+plugin: community.digitalocean.digitalocean  # use the DigitalOcean community inventory plugin to query the API
+oauth_token: "{{ lookup('env', 'DIGITAL_OCEAN_KEY') }}"  # read the DigitalOcean API token from the DIGITAL_OCEAN_KEY environment variable
+attributes:  # list of droplet attributes to fetch from the DigitalOcean API
+  - id  # unique numeric droplet ID
+  - name  # human-readable droplet name
+  - networks  # network interface data, used below to extract IP addresses
+  - region  # datacenter region (e.g. fra1)
+  - size_slug  # droplet size identifier (e.g. s-1vcpu-2gb)
+  - tags  # tags attached to the droplet, used below to build inventory groups
+compose:  # define ansible connection variables derived from droplet attributes
+  ansible_host: do_networks.v4 | selectattr('type', 'eq', 'public') | map(attribute='ip_address') | first  # pick the first public IPv4 address as the SSH target
+  ansible_user: "'root'"  # connect as root (DigitalOcean droplets accept root by default)
+  ansible_ssh_private_key_file: "'~/.ssh/id_ed25519'"  # use this local SSH private key to authenticate
+groups:  # automatically assign droplets to inventory groups based on their tags
+  swarm: "'swarm' in do_tags"  # droplets tagged 'swarm' are placed in the swarm group
+  db: "'db' in do_tags"  # droplets tagged 'db' are placed in the db group
+  monitoring: "'monitoring' in do_tags"  # droplets tagged 'monitoring' are placed in the monitoring group

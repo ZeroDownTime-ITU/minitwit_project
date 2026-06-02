@@ -1,73 +1,73 @@
-- name: Setup monitoring
-  hosts: monitoring
-  become: true
+- name: Setup monitoring  # provision the monitoring server and start the full observability stack
+  hosts: monitoring  # run only on the host(s) in the monitoring inventory group
+  become: true  # run via sudo
 
   tasks:
-    - name: Create mount point
-      file:
-        path: /mnt/volume-monitoring
-        state: directory
+    - name: Create mount point  # ensure the directory exists before mounting the block volume
+      file:  # use the file module to manage filesystem entries
+        path: /mnt/volume-monitoring  # path where the persistent DigitalOcean block volume will be mounted
+        state: directory  # ensure this path exists and is a directory
 
-    - name: Mount volume
-      mount:
-        path: /mnt/volume-monitoring
-        src: /dev/sda
-        fstype: ext4
-        opts: discard,defaults,noatime
-        state: mounted
+    - name: Mount volume  # attach persistent block storage so monitoring data survives droplet replacements
+      mount:  # use Ansible's mount module to manage /etc/fstab entries and mount points
+        path: /mnt/volume-monitoring  # directory to mount the volume at
+        src: /dev/sda  # block device path for the attached DigitalOcean volume
+        fstype: ext4  # filesystem type already formatted on the volume
+        opts: discard,defaults,noatime  # discard=enable TRIM for SSDs, noatime=skip access-time updates to reduce writes
+        state: mounted  # ensure the volume is mounted right now and added to /etc/fstab for reboots
 
-    - name: Create monitoring directories
-      file:
-        path: "{{ item }}"
-        state: directory
-        mode: '0755'
-      loop:
-        - /mnt/volume-monitoring/prometheus_data
-        - /mnt/volume-monitoring/grafana_data
-        - /mnt/volume-monitoring/loki_data
+    - name: Create monitoring directories  # create data directories for each monitoring service on the persistent volume
+      file:  # use the file module
+        path: "{{ item }}"  # iterate over the list below; item is replaced with each path in turn
+        state: directory  # ensure each path exists and is a directory
+        mode: '0755'  # make directories readable and executable by all users
+      loop:  # iterate over this list of paths
+        - /mnt/volume-monitoring/prometheus_data  # persistent storage for Prometheus time-series data
+        - /mnt/volume-monitoring/grafana_data  # persistent storage for Grafana dashboards and settings
+        - /mnt/volume-monitoring/loki_data  # persistent storage for Loki log data
 
-    - name: Set prometheus directory permissions
-      file:
-        path: /mnt/volume-monitoring/prometheus_data
-        owner: 65534
-        group: 65534
+    - name: Set prometheus directory permissions  # Prometheus runs as UID 65534 (nobody) inside its container
+      file:  # use the file module to set ownership
+        path: /mnt/volume-monitoring/prometheus_data  # the directory to chown
+        owner: 65534  # UID of the 'nobody' user that Prometheus runs as inside its container
+        group: 65534  # GID matching the same 'nobody' user
 
-    - name: Set grafana directory permissions
-      file:
-        path: /mnt/volume-monitoring/grafana_data
-        owner: 472
-        group: 472
+    - name: Set grafana directory permissions  # Grafana runs as UID 472 inside its container
+      file:  # use the file module to set ownership
+        path: /mnt/volume-monitoring/grafana_data  # the directory to chown
+        owner: 472  # UID that the Grafana process runs as inside its container
+        group: 472  # GID matching the Grafana container user
 
-    - name: Set loki directory permissions
-      file:
-        path: /mnt/volume-monitoring/loki_data
-        owner: 10001
-        group: 10001
+    - name: Set loki directory permissions  # Loki runs as UID 10001 inside its container
+      file:  # use the file module to set ownership
+        path: /mnt/volume-monitoring/loki_data  # the directory to chown
+        owner: 10001  # UID that the Loki process runs as inside its container
+        group: 10001  # GID matching the Loki container user
 
-    - name: Copy monitoring configs
-      copy:
-        src: ../../../monitoring/
-        dest: /monitoring/
+    - name: Copy monitoring configs  # upload any extra config files (e.g. Grafana provisioning, Loki config) to the server
+      copy:  # use the copy module to transfer a directory from the control machine
+        src: ../../../monitoring/  # source directory relative to the playbooks directory (trailing slash copies contents, not the folder itself)
+        dest: /monitoring/  # destination path on the monitoring host
 
-    - name: Generate prometheus config
-      template:
-        src: templates/prometheus.yml.j2
-        dest: /monitoring/prometheus.yml
+    - name: Generate prometheus config  # render the Prometheus config with the current inventory of scrape targets
+      template:  # use the template module to process Jinja2 variables before copying
+        src: templates/prometheus.yml.j2  # source template that iterates over swarm, db, and monitoring hosts
+        dest: /monitoring/prometheus.yml  # rendered output replaces any static prometheus.yml
 
-    - name: Copy docker-compose file
-      copy:
-        src: ../../../docker-compose.monitoring.yml
-        dest: /monitoring/docker-compose.yml
+    - name: Copy docker-compose file  # upload the compose file that defines all monitoring services
+      copy:  # use the copy module
+        src: ../../../docker-compose.monitoring.yml  # source compose file relative to the playbooks directory
+        dest: /monitoring/docker-compose.yml  # destination path on the monitoring host
 
-    - name: Stop monitoring stack if running
-      shell: docker compose down
+    - name: Stop monitoring stack if running  # tear down the current stack so the next task can start it fresh with updated images/configs
+      shell: docker compose down  # stop and remove all containers defined in the compose file
       args:
-        chdir: /monitoring
-      ignore_errors: true
+        chdir: /monitoring  # run the command from the monitoring directory where the compose file lives
+      ignore_errors: true  # do not fail if no stack is running (e.g. first-time provisioning)
 
-    - name: Start monitoring stack
-      shell: docker compose up -d
+    - name: Start monitoring stack  # bring up all monitoring services in detached mode
+      shell: docker compose up -d  # -d runs containers in the background
       args:
-        chdir: /monitoring
-      async: 300
-      poll: 10
+        chdir: /monitoring  # run the command from the monitoring directory where the compose file lives
+      async: 300  # allow up to 300 seconds for this task to complete (image pulls can be slow)
+      poll: 10  # check the task status every 10 seconds while waiting

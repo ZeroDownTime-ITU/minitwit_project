@@ -1,25 +1,25 @@
-- name: Init swarm on first manager
-  hosts: swarm[0]
-  become: true
+- name: Init swarm on first manager  # bootstrap the Docker Swarm by initializing it on one node
+  hosts: swarm[0]  # target only the first swarm host (index 0) so swarm init runs exactly once
+  become: true  # run via sudo
 
   tasks:
-    - name: Init Docker Swarm
-      shell: docker swarm init --advertise-addr {{ private_ip }}
-      register: swarm_init
-      ignore_errors: true
+    - name: Init Docker Swarm  # create a new swarm or no-op if one already exists
+      shell: docker swarm init --advertise-addr {{ private_ip }}  # initialize the swarm and advertise the private IP for inter-node communication
+      register: swarm_init  # save the output so we can inspect it if needed
+      ignore_errors: true  # do not fail if the swarm is already initialized (idempotent behavior)
 
-    - name: Get manager join token
-      shell: docker swarm join-token manager -q
-      register: manager_token
+    - name: Get manager join token  # fetch the token that other nodes use to join as managers
+      shell: docker swarm join-token manager -q  # -q prints only the token without extra text
+      register: manager_token  # store the token in a variable so other plays can read it via hostvars
 
-- name: Join remaining nodes as managers
-  hosts: swarm[1:] # all swarm nodes, except first
-  become: true
+- name: Join remaining nodes as managers  # add every other swarm node to the cluster
+  hosts: swarm[1:]  # all swarm nodes, except first
+  become: true  # run via sudo
 
   tasks:
-    - name: Join swarm as manager
+    - name: Join swarm as manager  # connect this node to the existing swarm as a manager
       shell: >
         docker swarm join
-        --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}
-        {{ hostvars[groups['swarm'][0]].private_ip }}:2377
-      ignore_errors: true
+        --token {{ hostvars[groups['swarm'][0]].manager_token.stdout }}  # use the join token retrieved from the first swarm node
+        {{ hostvars[groups['swarm'][0]].private_ip }}:2377  # connect to the first swarm node's private IP on the default swarm port
+      ignore_errors: true  # do not fail if the node is already a member of the swarm

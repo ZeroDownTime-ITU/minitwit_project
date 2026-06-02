@@ -1,50 +1,58 @@
+# Catch-all server block: silently reject any request that doesn't match a known hostname
 server {
-    listen 80 default_server;
-    server_name _;
-    return 444;
+    listen 80 default_server;  # bind to port 80 and act as the default if no other server block matches
+    server_name _;  # _ is a placeholder that matches any hostname not matched by other blocks
+    return 444;  # return Nginx's special "no response" status — closes the connection without sending HTTP headers, blocking scanners and bots
 }
 
+# Main server block: handle traffic for the application's domain
 server {
-    listen 80;
-    server_name zerodt.live www.zerodt.live;
+    listen 80;  # bind to port 80 for incoming HTTP requests
+    server_name zerodt.live www.zerodt.live;  # only handle requests for these two hostnames
 
+    # Route all requests to the root path to the Svelte frontend service
     location / {
-        proxy_pass http://svelte-frontend:80;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-Proto https;
+        proxy_pass http://svelte-frontend:80;  # forward requests to the svelte-frontend container on port 80
+        proxy_set_header Host $host;  # pass the original Host header so the upstream knows which domain was requested
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to the upstream
+        proxy_set_header X-Forwarded-Proto https;  # tell the upstream the original request was HTTPS (used for redirect logic)
     }
 
+    # Route /api requests to the Java backend service
     location /api {
-        proxy_pass http://java-backend:7070;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://java-backend:7070;  # forward requests to the java-backend container on port 7070
+        proxy_set_header Host $host;  # pass the original Host header to the upstream
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to the upstream
     }
 
+    # Route /web requests to the Java backend service (legacy simulator endpoint path)
     location /web {
-        proxy_pass http://java-backend:7070;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_pass http://java-backend:7070;  # forward requests to the java-backend container on port 7070
+        proxy_set_header Host $host;  # pass the original Host header to the upstream
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to the upstream
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;  # append this proxy to the X-Forwarded-For chain so the full request path is visible
     }
 
+    # Expose the Swagger UI served by the Java backend
     location /swagger {
-        proxy_pass http://java-backend:7070/swagger;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://java-backend:7070/swagger;  # forward to the /swagger path on the java-backend container
+        proxy_set_header Host $host;  # pass the original Host header to the upstream
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to the upstream
     }
 
+    # Expose the OpenAPI JSON spec served by the Java backend
     location /openapi {
-        proxy_pass http://java-backend:7070/openapi;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
+        proxy_pass http://java-backend:7070/openapi;  # forward to the /openapi path on the java-backend container
+        proxy_set_header Host $host;  # pass the original Host header to the upstream
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to the upstream
     }
 
+    # Proxy the Grafana dashboard through a /grafana/ sub-path so it is accessible via the main domain
     location /grafana/ {
-        proxy_pass http://{{ hostvars[groups['monitoring'][0]].private_ip }}:3000/;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-Proto https;
-        proxy_set_header X-Forwarded-Host $host;
+        proxy_pass http://{{ hostvars[groups['monitoring'][0]].private_ip }}:3000/;  # Ansible inserts the monitoring node's private IP; trailing slash rewrites the path so /grafana/ becomes / on the upstream
+        proxy_set_header Host $host;  # pass the original Host header to Grafana
+        proxy_set_header X-Real-IP $remote_addr;  # pass the client's real IP address to Grafana
+        proxy_set_header X-Forwarded-Proto https;  # tell Grafana the original request was HTTPS so it generates correct redirect URLs
+        proxy_set_header X-Forwarded-Host $host;  # pass the original host so Grafana builds correct absolute URLs in its UI
     }
 }

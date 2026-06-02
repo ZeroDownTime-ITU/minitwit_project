@@ -1,36 +1,36 @@
-- name: Deploy app stack
-  hosts: swarm
-  become: true
-  tags: [deploy]
+- name: Deploy app stack  # prepare nginx config on every swarm node before deploying
+  hosts: swarm  # run on all swarm nodes because nginx runs on each one
+  become: true  # run via sudo
+  tags: [deploy]  # mark with 'deploy' tag so this play can be run selectively with --tags deploy
   tasks:
-    - name: Create nginx config directory
-      file:
-        path: /etc/nginx/conf.d
-        state: directory
+    - name: Create nginx config directory  # ensure the target directory exists before writing the config file
+      file:  # use the file module to manage filesystem entries
+        path: /etc/nginx/conf.d  # standard nginx drop-in config directory
+        state: directory  # ensure this path exists and is a directory
 
-    - name: Copy nginx config
-      template:
-        src: templates/nginx.conf.j2
-        dest: /etc/nginx/conf.d/default.conf
+    - name: Copy nginx config  # render and deploy the nginx reverse-proxy config with host-specific values
+      template:  # use the template module to process Jinja2 variables before copying
+        src: templates/nginx.conf.j2  # source Jinja2 template on the control machine
+        dest: /etc/nginx/conf.d/default.conf  # rendered output path on the remote host
 
-- name: Deploy stack
-  hosts: swarm[0] # Swarm distributes across all nodes automatically
-  become: true
-  tags: [deploy]
+- name: Deploy stack  # deploy the full application stack to Docker Swarm
+  hosts: swarm[0]  # Swarm distributes across all nodes automatically
+  become: true  # run via sudo
+  tags: [deploy]  # mark with 'deploy' tag so this play can be run selectively with --tags deploy
   vars_files:
-    - vars/secrets.yml
+    - vars/secrets.yml  # load the vault-encrypted file containing database credentials and JWT secret
 
   tasks:
-    - name: Copy app compose file
-      copy:
-        src: ../../../docker-compose.app.yml
-        dest: /root/docker-compose.app.yml
+    - name: Copy app compose file  # upload the docker-compose file that defines all application services
+      copy:  # use the copy module to transfer a file from the control machine
+        src: ../../../docker-compose.app.yml  # source compose file relative to the playbooks directory
+        dest: /root/docker-compose.app.yml  # destination path on the swarm manager node
 
-    - name: Deploy stack
-      shell: docker stack deploy --with-registry-auth -c /root/docker-compose.app.yml minitwit
-      environment:
-        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].private_ip }}:5432/minitwitdb"
-        POSTGRES_USER: "{{ postgres_user }}"
-        POSTGRES_PASSWORD: "{{ postgres_password }}"
-        JWT_SECRET: "{{ jwt_secret }}"
-        VERSION: "{{ version | default('latest') }}"
+    - name: Deploy stack  # start or update the application services across the entire swarm
+      shell: docker stack deploy --with-registry-auth -c /root/docker-compose.app.yml minitwit  # --with-registry-auth passes registry credentials to all swarm nodes; minitwit is the stack name
+      environment:  # environment variables injected into the shell command, passed to docker stack as stack config
+        JDBC_URL: "jdbc:postgresql://{{ hostvars[groups['db'][0]].private_ip }}:5432/minitwitdb"  # build the database connection URL using the db node's private IP
+        POSTGRES_USER: "{{ postgres_user }}"  # database username from vault-encrypted secrets
+        POSTGRES_PASSWORD: "{{ postgres_password }}"  # database password from vault-encrypted secrets
+        JWT_SECRET: "{{ jwt_secret }}"  # JWT signing secret from vault-encrypted secrets
+        VERSION: "{{ version | default('latest') }}"  # image tag to deploy; defaults to 'latest' if not passed via --extra-vars

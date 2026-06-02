@@ -1,51 +1,52 @@
-- name: Base setup for all nodes
-  hosts: swarm,db,monitoring
-  become: true # run via sudo
+- name: Base setup for all nodes  # play name shown in ansible output
+  hosts: swarm,db,monitoring  # run this play on all three node groups
+  become: true  # run via sudo
 
   tasks:
-    - name: Set private IP fact for all nodes
-      ansible.builtin.set_fact:
-        private_ip: "{{ do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}"
+    - name: Set private IP fact for all nodes  # store private IP so other plays can reference it via hostvars
+      ansible.builtin.set_fact:  # built-in module that creates a host variable
+        private_ip: "{{ do_networks.v4 | selectattr('type', 'eq', 'private') | map(attribute='ip_address') | first }}"  # filter the droplet's network list to find the private IPv4 address
 
-    - name: Wait for apt lock to be released
-      shell: while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done
-      changed_when: false
+    - name: Wait for apt lock to be released  # avoid failing when cloud-init is still running apt in the background
+      shell: while fuser /var/lib/apt/lists/lock /var/lib/dpkg/lock-frontend >/dev/null 2>&1; do sleep 5; done  # loop until no process holds the apt or dpkg lock file
+      changed_when: false  # mark as unchanged in output because this task only waits and changes nothing
 
-    - name: Update apt cache
-      apt:
-        update_cache: yes
+    - name: Update apt cache  # refresh the package index before installing anything
+      apt:  # use Ansible's apt module
+        update_cache: yes  # equivalent to running apt-get update
 
-    - name: Install Docker
-      shell: curl -fsSL https://get.docker.com | sh
+    - name: Install Docker  # install the Docker engine using the official convenience script
+      shell: curl -fsSL https://get.docker.com | sh  # download and pipe the install script directly to the shell
       args:
-        creates: /usr/bin/docker
-      retries: 3
-      delay: 30
-      register: result
-      until: result.rc == 0
+        creates: /usr/bin/docker  # skip this task entirely if the docker binary already exists
+      retries: 3  # retry up to 3 times if the download or install fails
+      delay: 30  # wait 30 seconds between each retry attempt
+      register: result  # save the command result so the until condition can check it
+      until: result.rc == 0  # keep retrying until the return code is 0 (success)
 
-    - name: Start and enable Docker
-      systemd:
-        name: docker
-        state: started
-        enabled: yes
+    - name: Start and enable Docker  # ensure Docker is running and set to start automatically on reboot
+      systemd:  # use Ansible's systemd module to manage services
+        name: docker  # the name of the systemd service unit
+        state: started  # ensure the service is currently running
+        enabled: yes  # ensure the service is enabled to start on boot
 
-    - name: Install Docker Compose plugin
-      apt:
-        name: docker-compose-plugin
-        state: present
+    - name: Install Docker Compose plugin  # install the compose subcommand so 'docker compose' works
+      apt:  # use Ansible's apt module
+        name: docker-compose-plugin  # package name for the Docker Compose v2 plugin
+        state: present  # install it if not already installed
 
-    - name: Install node exporter
-      unarchive:
-        src: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz
-        dest: /usr/local/bin
-        remote_src: yes
-        extra_opts: [--strip-components=1]
-        creates: /usr/local/bin/node_exporter
+    - name: Install node exporter  # install the Prometheus node exporter for system-level metrics
+      unarchive:  # download and extract a compressed archive in one step
+        src: https://github.com/prometheus/node_exporter/releases/download/v1.8.1/node_exporter-1.8.1.linux-amd64.tar.gz  # URL of the official node_exporter release tarball
+        dest: /usr/local/bin  # extract files directly into this directory
+        remote_src: yes  # fetch the archive from the internet on the remote host, not from the control machine
+        extra_opts: [--strip-components=1]  # remove the top-level directory from the archive so the binary lands directly in dest
+        creates: /usr/local/bin/node_exporter  # skip extraction if the binary already exists
 
-    - name: Create node exporter systemd service
-      copy:
-        dest: /etc/systemd/system/node_exporter.service
+    - name: Create node exporter systemd service  # write the systemd unit file so node_exporter runs as a managed service
+      copy:  # use the copy module to write a file with inline content
+        dest: /etc/systemd/system/node_exporter.service  # path where systemd looks for unit files
+        # the content below is the full systemd unit file written verbatim to the destination
         content: |
           [Unit]
           Description=Node Exporter
@@ -58,44 +59,44 @@
           [Install]
           WantedBy=multi-user.target
 
-    - name: Start and enable node exporter
-      systemd:
-        name: node_exporter
-        state: started
-        enabled: yes
-        daemon_reload: yes
-    
-    - name: Create alloy config directory
-      file:
-        path: /etc/alloy
-        state: directory
+    - name: Start and enable node exporter  # start node_exporter and make it survive reboots
+      systemd:  # use Ansible's systemd module
+        name: node_exporter  # name of the service unit created in the previous task
+        state: started  # ensure the service is running right now
+        enabled: yes  # ensure the service starts automatically on boot
+        daemon_reload: yes  # reload systemd unit definitions before acting, picking up the new file
 
-- name: Setup alloy on non-monitoring nodes
-  hosts: swarm,db
-  become: true
+    - name: Create alloy config directory  # ensure the directory exists before any task tries to write a config into it
+      file:  # use the file module to manage filesystem entries
+        path: /etc/alloy  # path to create
+        state: directory  # ensure this path exists and is a directory
+
+- name: Setup alloy on non-monitoring nodes  # deploy the Grafana Alloy log-forwarding agent on swarm and db nodes
+  hosts: swarm,db  # skip the monitoring node because it uses a different static config
+  become: true  # run via sudo
   tasks:
-    - name: Copy alloy config
-      template:
-        src: templates/alloy-config.alloy.j2
-        dest: /etc/alloy/config.alloy
+    - name: Copy alloy config  # render and deploy the Jinja2 template with host-specific values
+      template:  # use the template module to process Jinja2 variables before copying
+        src: templates/alloy-config.alloy.j2  # source template on the control machine
+        dest: /etc/alloy/config.alloy  # rendered output path on the remote host
 
-    - name: Restart alloy container
-      docker_container:
-        name: alloy
-        image: grafana/alloy:latest
-        state: started
-        restart: yes
-        restart_policy: always
-        volumes:
-          - /etc/alloy/config.alloy:/etc/alloy/config.alloy
-          - /var/lib/docker/containers:/var/lib/docker/containers:ro
-          - /var/run/docker.sock:/var/run/docker.sock
+    - name: Restart alloy container  # start (or restart) the Alloy container with the new config
+      docker_container:  # use Ansible's docker_container module
+        name: alloy  # name for this container
+        image: grafana/alloy:latest  # use the latest Grafana Alloy image
+        state: started  # ensure the container is running
+        restart: yes  # force a restart even if the container is already running (picks up config changes)
+        restart_policy: always  # automatically restart the container if it crashes or the host reboots
+        volumes:  # list of bind mounts to pass into the container
+          - /etc/alloy/config.alloy:/etc/alloy/config.alloy  # mount the rendered config file into the container
+          - /var/lib/docker/containers:/var/lib/docker/containers:ro  # give alloy read-only access to container log files
+          - /var/run/docker.sock:/var/run/docker.sock  # give alloy access to the Docker socket for container discovery
 
-- name: Copy alloy config to monitoring node
-  hosts: monitoring
-  become: true
+- name: Copy alloy config to monitoring node  # the monitoring node uses a static config that does not need Jinja2 templating
+  hosts: monitoring  # run only on the monitoring node
+  become: true  # run via sudo
   tasks:
-    - name: Copy alloy config
-      copy:
-        src: files/alloy-config-monitoring.alloy
-        dest: /etc/alloy/config.alloy
+    - name: Copy alloy config  # copy the pre-written static alloy config file
+      copy:  # use the copy module (no template rendering needed for the monitoring node config)
+        src: files/alloy-config-monitoring.alloy  # source file on the control machine
+        dest: /etc/alloy/config.alloy  # destination path on the remote monitoring host

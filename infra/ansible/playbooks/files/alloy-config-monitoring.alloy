@@ -1,32 +1,42 @@
+// Discover running Docker containers via the Docker socket
 discovery.docker "containers" {
-  host = "unix:///var/run/docker.sock"
+  host = "unix:///var/run/docker.sock"  // connect to the local Docker daemon using the Unix socket
 }
 
+// Relabel discovered containers to add useful metadata labels before forwarding logs
 discovery.relabel "containers" {
-  targets = discovery.docker.containers.targets
+  targets = discovery.docker.containers.targets  // use the containers discovered above as input
+
+  // Extract the Docker Swarm service name and store it as the 'service' label
   rule {
-    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]
-    target_label  = "service"
+    source_labels = ["__meta_docker_container_label_com_docker_swarm_service_name"]  // read the swarm service name from Docker metadata
+    target_label  = "service"  // store it under the 'service' label on each log stream
   }
+
+  // Extract a clean container name (strip the leading slash and task suffix) and store it as 'container'
   rule {
-    source_labels = ["__meta_docker_container_name"]
-    regex         = "/?([^.]+).*"
-    target_label  = "container"
+    source_labels = ["__meta_docker_container_name"]  // read the raw container name from Docker metadata
+    regex         = "/?([^.]+).*"  // capture everything up to the first dot, stripping the leading slash if present
+    target_label  = "container"  // store the cleaned name under the 'container' label
   }
+
+  // Tag every log stream with the name of the node it came from
   rule {
-    replacement  = "minitwit-monitoring"
-    target_label = "node"
+    replacement  = "minitwit-monitoring"  // hardcoded node name for the monitoring droplet
+    target_label = "node"  // store it under the 'node' label so logs can be filtered by host in Loki
   }
 }
 
+// Collect logs from all discovered and relabelled containers and forward them to Loki
 loki.source.docker "default" {
-  host       = "unix:///var/run/docker.sock"
-  targets    = discovery.relabel.containers.output
-  forward_to = [loki.write.default.receiver]
+  host       = "unix:///var/run/docker.sock"  // connect to Docker to tail container logs
+  targets    = discovery.relabel.containers.output  // use the relabelled container list as the source
+  forward_to = [loki.write.default.receiver]  // send collected logs to the loki.write block below
 }
 
+// Ship collected logs to the Loki push API
 loki.write "default" {
   endpoint {
-    url = "http://loki:3100/loki/api/v1/push"
+    url = "http://loki:3100/loki/api/v1/push"  // on the monitoring node, loki is reachable via the Docker network alias 'loki'
   }
 }

@@ -1,40 +1,40 @@
-- name: Setup database
-  hosts: db
-  become: true
+- name: Setup database  # configure the database server and start PostgreSQL
+  hosts: db  # run only on the host(s) in the db inventory group
+  become: true  # run via sudo
   vars_files:
-    - vars/secrets.yml
+    - vars/secrets.yml  # load the vault-encrypted file containing database credentials
 
   tasks:
-    - name: Create mount point
-      file:
-        path: /mnt/volume-db
-        state: directory
+    - name: Create mount point  # ensure the directory exists before mounting the block volume
+      file:  # use the file module to manage filesystem entries
+        path: /mnt/volume-db  # path where the persistent DigitalOcean block volume will be mounted
+        state: directory  # ensure this path exists and is a directory
 
-    - name: Mount volume
-      mount:
-        path: /mnt/volume-db
-        src: /dev/sda
-        fstype: ext4
-        opts: discard,defaults,noatime
-        state: mounted
+    - name: Mount volume  # attach the persistent block storage so database files survive droplet replacements
+      mount:  # use Ansible's mount module to manage /etc/fstab entries and mount points
+        path: /mnt/volume-db  # directory to mount the volume at
+        src: /dev/sda  # block device path for the attached DigitalOcean volume
+        fstype: ext4  # filesystem type already formatted on the volume
+        opts: discard,defaults,noatime  # discard=enable TRIM for SSDs, noatime=skip access-time updates to reduce writes
+        state: mounted  # ensure the volume is mounted right now and added to /etc/fstab for reboots
 
-    - name: Create postgres data directory
-      file:
-        path: /mnt/volume-db/postgres_data
-        state: directory
-        mode: '0755' # set file permissions
+    - name: Create postgres data directory  # create the directory where PostgreSQL will store its data files
+      file:  # use the file module
+        path: /mnt/volume-db/postgres_data  # store data on the persistent volume, not the ephemeral droplet disk
+        state: directory  # ensure this path exists and is a directory
+        mode: '0755'  # set file permissions
 
-    - name: Run postgres container
-      docker_container:
-        name: postgres
-        image: postgres:15-alpine
-        state: started
-        restart_policy: always
+    - name: Run postgres container  # start the PostgreSQL database container
+      docker_container:  # use Ansible's docker_container module
+        name: postgres  # name for this container
+        image: postgres:15-alpine  # use the lightweight Alpine-based Postgres 15 image
+        state: started  # ensure the container is running
+        restart_policy: always  # automatically restart if it crashes or the host reboots
         ports:
-          - "5432:5432"
-        env:
-          POSTGRES_USER: "{{ postgres_user }}"
-          POSTGRES_PASSWORD: "{{ postgres_password }}"
-          POSTGRES_DB: "{{ postgres_db }}"
+          - "5432:5432"  # expose PostgreSQL on the standard port so the app can connect
+        env:  # environment variables read by the Postgres image at startup
+          POSTGRES_USER: "{{ postgres_user }}"  # database superuser name, loaded from vault-encrypted secrets
+          POSTGRES_PASSWORD: "{{ postgres_password }}"  # database superuser password, loaded from vault-encrypted secrets
+          POSTGRES_DB: "{{ postgres_db }}"  # name of the default database to create at startup, loaded from vault-encrypted secrets
         volumes:
-          - /mnt/volume-db/postgres_data:/var/lib/postgresql/data
+          - /mnt/volume-db/postgres_data:/var/lib/postgresql/data  # persist database files on the block volume so data survives container restarts

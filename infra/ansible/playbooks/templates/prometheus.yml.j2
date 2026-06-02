@@ -1,21 +1,25 @@
 global:
-  scrape_interval: 15s
+  scrape_interval: 15s  # default interval at which Prometheus scrapes all targets unless overridden per job
 
 scrape_configs:
-  - job_name: 'minitwit-java'
-    scrape_interval: 5s
-    metrics_path: '/metrics'
+  # Scrape application metrics from the Java backend running on every swarm node
+  - job_name: 'minitwit-java'  # label applied to all metrics collected by this job
+    scrape_interval: 5s  # override the global interval; scrape the app more frequently for finer-grained metrics
+    metrics_path: '/metrics'  # HTTP path where the Java backend exposes its Prometheus metrics endpoint
     static_configs:
       - targets:
+# Jinja2 loop: Ansible renders one target entry per host in the swarm group
 {% for host in groups['swarm'] %}
-          - '{{ hostvars[host].private_ip }}:7070'
+          - '{{ hostvars[host].private_ip }}:7070'  # private IP of each swarm node + the Java backend port
 {% endfor %}
 
-  - job_name: 'node-exporter'
+  # Scrape OS-level metrics from the node_exporter running on every server
+  - job_name: 'node-exporter'  # label applied to all metrics collected by this job
     static_configs:
+# Jinja2 loop: Ansible renders one target block per host across swarm, db, and monitoring groups
 {% for host in groups['swarm'] + groups['db'] + groups['monitoring'] %}
       - targets:
-          - '{{ hostvars[host].private_ip }}:9100'
+          - '{{ hostvars[host].private_ip }}:9100'  # private IP of each node + the standard node_exporter port
         labels:
-          instance: '{{ hostvars[host].do_name }}'
+          instance: '{{ hostvars[host].do_name }}'  # attach the DigitalOcean droplet name so metrics can be filtered by hostname in Grafana
 {% endfor %}

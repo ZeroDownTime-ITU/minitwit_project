@@ -42,7 +42,6 @@ resource "digitalocean_droplet" "monitoring" {
 data "digitalocean_volume" "volume-db" {
   name   = "volume-db"
   region = "fra1"
-
 }
 
 data "digitalocean_volume" "volume-monitoring" {

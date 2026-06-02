@@ -1,6 +1,6 @@
 - name: Base setup for all nodes
   hosts: swarm,db,monitoring
-  become: true
+  become: true # run via sudo
 
   tasks:
     - name: Set private IP fact for all nodes
@@ -73,8 +73,6 @@
 - name: Setup alloy on non-monitoring nodes
   hosts: swarm,db
   become: true
-  vars_files:
-    - vars/main.yml
   tasks:
     - name: Copy alloy config
       template:

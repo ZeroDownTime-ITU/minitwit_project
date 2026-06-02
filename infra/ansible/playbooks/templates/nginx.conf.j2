@@ -1,11 +1,18 @@
 server {
-    listen 80;
+    listen 80 default_server;
     server_name _;
+    return 444;
+}
+
+server {
+    listen 80;
+    server_name zerodt.live www.zerodt.live;
 
     location / {
         proxy_pass http://svelte-frontend:80;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-Proto https;
     }
 
     location /api {
